@@ -1,296 +1,488 @@
+'use strict';
+
+/* ============================================================
+   BOS THROWDOWN - ENGINE
+   Asset paths, background keying, audio unlock, input,
+   fighter class and skeleton rig.
+   ============================================================ */
+
+/* ==================== CONSTANTS ==================== */
 const CANVAS_W = 960, CANVAS_H = 540;
-const GROUND_Y = 430;
-const STAGE_L = 40, STAGE_R = CANVAS_W - 40;
+const GROUND_Y = 440;
+const STAGE_L = 90, STAGE_R = CANVAS_W - 90;
 const ROUND_TIME = 90;
 const HITSTUN_MS = 260;
 
-let canvas, ctx;
+let canvas = null, ctx = null;
 let lastTs = 0;
 let gamepadIndex = null;
 let musicEnabled = true;
 let currentTrack = null;
 let currentTrackName = null;
 
+/* ==================== STORAGE / PROGRESS ==================== */
 const Storage = {
-  get(key, def){ try{ const v = localStorage.getItem(key); return v===null?def:JSON.parse(v); }catch(e){ return def; } },
-  set(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+  get(key, def){
+    try { const v = localStorage.getItem(key); return v === null ? def : JSON.parse(v); }
+    catch(e){ return def; }
+  },
+  set(key, val){ try { localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
 };
 
 const Progress = {
-  towerClears(){ return Storage.get('bos_towerClears', 0); },
-  addClear(){ Storage.set('bos_towerClears', this.towerClears()+1); },
-  shadowUnlockCount(){ return Storage.get('bos_shadowUnlock', 0); },
-  unlockNextShadow(){ const c = this.shadowUnlockCount(); if(c < 3) Storage.set('bos_shadowUnlock', c+1); },
-  difficultyMult(){ const clears = this.towerClears(); return Math.min(1 + clears*0.05, 1.6); }
+  get towerClears(){ return Storage.get('bos_towerClears', 0); },
+  addClear(){ Storage.set('bos_towerClears', this.towerClears + 1); },
+  get shadowUnlockCount(){ return Storage.get('bos_shadowUnlock', 0); },
+  unlockNextShadow(){
+    const c = this.shadowUnlockCount;
+    if (c < SHADOW_ROSTER.length) Storage.set('bos_shadowUnlock', c + 1);
+  },
+  get difficultyMult(){ return Math.min(1 + this.towerClears * 0.05, 1.6); }
 };
 
+/* ==================== ASSET PATHS ====================
+   THE BUG: old code produced "assetstmoneyfront.jpeg" with no
+   slash and no underscore. No image ever resolved, so every
+   fighter fell back to a maroon rectangle.
+====================================================== */
+function imgPath(artId, pose){ return 'assets/' + artId + '_' + pose + '.jpeg'; }
+function audioPath(name){ return 'audio/' + name; }
+
+/* ==================== BACKGROUND REMOVAL ====================
+   Border flood-fill. Only white CONNECTED TO THE OUTER EDGE is
+   erased, so a white shirt or white sneakers in the middle of a
+   body survive. Saturation guard means red/blue clothing is
+   never touched. Runs once per image at load, cached to canvas.
+============================================================= */
+const Assets = {};
+const loadFailures = [];
+
+function keyOutBackground(img){
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (!w || !h) return img;
+
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const cx = c.getContext('2d', { willReadFrequently: true });
+  cx.drawImage(img, 0, 0);
+
+  let data;
+  try { data = cx.getImageData(0, 0, w, h); }
+  catch(e){ return img; }   // tainted canvas on file:// -> raw image fallback
+
+  const px = data.data;
+  const seen = new Uint8Array(w * h);
+  const stack = [];
+
+  const isBg = (i) => {
+    const r = px[i], g = px[i+1], b = px[i+2];
+    if (r < 228 || g < 228 || b < 228) return false;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    return (mx - mn) < 20;
+  };
+
+  const pushIf = (x, y) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return;
+    const p = y * w + x;
+    if (seen[p]) return;
+    seen[p] = 1;
+    if (isBg(p * 4)) stack.push(p);
+  };
+
+  for (let x = 0; x < w; x++){ pushIf(x, 0); pushIf(x, h - 1); }
+  for (let y = 0; y < h; y++){ pushIf(0, y); pushIf(w - 1, y); }
+
+  while (stack.length){
+    const p = stack.pop();
+    px[p * 4 + 3] = 0;
+    const x = p % w, y = (p / w) | 0;
+    pushIf(x + 1, y); pushIf(x - 1, y); pushIf(x, y + 1); pushIf(x, y - 1);
+  }
+
+  // soften the 1px JPEG compression fringe
+  for (let y = 1; y < h - 1; y++){
+    for (let x = 1; x < w - 1; x++){
+      const p = (y * w + x) * 4;
+      if (px[p+3] === 0) continue;
+      let clear = 0;
+      if (px[p - 4 + 3] === 0) clear++;
+      if (px[p + 4 + 3] === 0) clear++;
+      if (px[p - w*4 + 3] === 0) clear++;
+      if (px[p + w*4 + 3] === 0) clear++;
+      if (clear >= 2) px[p+3] = 120;
+    }
+  }
+
+  cx.putImageData(data, 0, 0);
+  return c;
+}
+
+function loadImageAsset(artId, pose){
+  const key = artId + '_' + pose;
+  const path = imgPath(artId, pose);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      if (!img.naturalWidth){ loadFailures.push(path); return resolve(false); }
+      try { Assets[key] = keyOutBackground(img); }
+      catch(e){ Assets[key] = img; }
+      resolve(true);
+    };
+    img.onerror = () => { loadFailures.push(path); resolve(false); };
+    img.src = path;
+  });
+}
+
+const AudioAssets = {};
+
+function loadAudioAsset(name){
+  const path = audioPath(name);
+  return new Promise(resolve => {
+    const a = new Audio();
+    a.preload = 'auto';
+    let settled = false;
+    const done = (ok) => {
+      if (settled) return;
+      settled = true;
+      if (ok) AudioAssets[name] = a; else loadFailures.push(path);
+      resolve(ok);
+    };
+    a.addEventListener('canplay', () => done(true));
+    a.addEventListener('loadedmetadata', () => { if (a.duration > 0) done(true); });
+    a.addEventListener('error', () => done(false));
+    setTimeout(() => done(a.readyState >= 1), 20000);   // 14MB song1 hang guard
+    a.src = path;
+    a.load();
+  });
+}
+
+function getArt(artId, pose){
+  return Assets[artId + '_' + pose] || Assets[artId + '_front'] || null;
+}
+
+/* ==================== AUDIO ==================== */
 let audioUnlocked = false;
 let sharedAudioCtx = null;
 
 function unlockAudioContext(){
-  if(audioUnlocked) return;
+  if (audioUnlocked) return;
   audioUnlocked = true;
-  try{
+  try {
     const AC = window.AudioContext || window.webkitAudioContext;
-    if(AC){ sharedAudioCtx = sharedAudioCtx || new AC(); if(sharedAudioCtx.state === 'suspended'){ sharedAudioCtx.resume().catch(()=>{}); } }
-  }catch(e){}
-  try{
-    const primer = new Audio();
-    primer.src = 'audio/song3.mp3';
-    primer.volume = 0;
-    const p = primer.play();
-    if(p && p.catch){ p.then(()=>{ primer.pause(); primer.currentTime = 0; }).catch(()=>{}); }
-  }catch(e){}
-  if(currentTrack && musicEnabled && currentTrack.paused){ currentTrack.play().catch(()=>{}); }
+    if (AC){
+      sharedAudioCtx = sharedAudioCtx || new AC();
+      if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume().catch(()=>{});
+    }
+  } catch(e){}
+  Object.values(AudioAssets).forEach(a => {
+    const wasPaused = a.paused;
+    a.play().then(() => {
+      if (wasPaused){ a.pause(); try { a.currentTime = 0; } catch(e){} }
+    }).catch(()=>{});
+  });
+  if (currentTrack && musicEnabled && currentTrack.paused){
+    currentTrack.play().catch(()=>{});
+  }
 }
-['pointerdown','touchstart','mousedown','keydown'].forEach(evt=>{
+['pointerdown','touchstart','mousedown','keydown'].forEach(evt => {
   window.addEventListener(evt, unlockAudioContext, { once:true, passive:true });
 });
 
-function playMusic(name){
-  if(currentTrackName === name && currentTrack && !currentTrack.paused) return;
-  if(currentTrack){ currentTrack.pause(); }
-  currentTrack = new Audio('audio/'+name);
-  currentTrack.loop = true;
-  currentTrack.volume = 0.55;
+function playMusic(name, fromTime){
+  if (currentTrackName === name && currentTrack && !currentTrack.paused) return currentTrack;
+  if (currentTrack) currentTrack.pause();
+  const a = AudioAssets[name] || new Audio(audioPath(name));
+  AudioAssets[name] = a;
+  a.loop = (name !== 'song1.mp3');   // the Jung intro must not loop
+  a.volume = 0.55;
+  if (typeof fromTime === 'number'){ try { a.currentTime = fromTime; } catch(e){} }
+  currentTrack = a;
   currentTrackName = name;
-  if(musicEnabled){ currentTrack.play().catch(()=>{}); }
+  if (musicEnabled) a.play().catch(()=>{});
+  return a;
 }
-function pauseMusic(){ if(currentTrack) currentTrack.pause(); }
-function resumeMusic(){ if(currentTrack && musicEnabled) currentTrack.play().catch(()=>{}); }
+function pauseMusic(){ if (currentTrack) currentTrack.pause(); }
+function resumeMusic(){ if (currentTrack && musicEnabled) currentTrack.play().catch(()=>{}); }
 function setMusicEnabled(v){
   musicEnabled = v;
-  if(currentTrack){ if(v) currentTrack.play().catch(()=>{}); else currentTrack.pause(); }
+  if (!currentTrack) return;
+  if (v) currentTrack.play().catch(()=>{}); else currentTrack.pause();
 }
 
+/* ==================== INPUT ==================== */
 const Input = {
   left:false, right:false, up:false, down:false,
-  punch:false, kick:false, special:false, block:false, pause:false, confirm:false,
-  _prevPunch:false, _prevKick:false, _prevSpecial:false, _prevConfirm:false, _prevPause:false, _prevUp:false,
-  pressedPunch(){ return this.punch && !this._prevPunch; },
-  pressedKick(){ return this.kick && !this._prevKick; },
-  pressedSpecial(){ return this.special && !this._prevSpecial; },
-  pressedConfirm(){ return this.confirm && !this._prevConfirm; },
-  pressedPause(){ return this.pause && !this._prevPause; },
-  pressedUp(){ return this.up && !this._prevUp; },
+  punch:false, kick:false, special:false, block:false,
+  pause:false, confirm:false, back:false,
+  _prev:{},
+  pressed(k){ return this[k] && !this._prev[k]; },
   latch(){
-    this._prevPunch=this.punch; this._prevKick=this.kick; this._prevSpecial=this.special;
-    this._prevConfirm=this.confirm; this._prevPause=this.pause; this._prevUp=this.up;
+    ['left','right','up','down','punch','kick','special','block','pause','confirm','back']
+      .forEach(k => this._prev[k] = this[k]);
   }
 };
 
+const heldKeys = {};
+
 const keyMap = {
-  'ArrowLeft':'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down',
-  'a':'left','d':'right','w':'up','s':'down','A':'left','D':'right','W':'up','S':'down',
-  'x':'punch','X':'punch','j':'punch','J':'punch',
-  'c':'kick','C':'kick','k':'kick','K':'kick',
-  'Shift':'special','l':'special','L':'special',
-  'v':'block','V':'block','i':'block','I':'block',
-  'Escape':'pause','p':'pause','P':'pause',
-  'Enter':'confirm',' ':'confirm'
+  ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down',
+  a:'left', d:'right', w:'up', s:'down',
+  A:'left', D:'right', W:'up', S:'down',
+  j:'punch', J:'punch',
+  c:'kick', C:'kick', k:'kick', K:'kick',
+  Shift:'special', l:'special', L:'special',
+  v:'block', V:'block', i:'block', I:'block',
+  Escape:'pause', p:'pause', P:'pause'
 };
 
-window.addEventListener('keydown', (e)=>{
+window.addEventListener('keydown', e => {
   const action = keyMap[e.key];
-  if(action){ Input[action] = true; if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault(); }
-});
-window.addEventListener('keyup', (e)=>{
-  const action = keyMap[e.key];
-  if(action){ Input[action] = false; }
+  if (action){ Input[action] = true; heldKeys[action] = true; }
+  if (e.key === 'x' || e.key === 'X'){
+    Input.punch = true; Input.confirm = true;
+    heldKeys.punch = true; heldKeys.confirm = true;
+  }
+  if (e.key === 'Enter' || e.key === ' '){
+    Input.confirm = true; heldKeys.confirm = true;
+  }
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
 });
 
-window.addEventListener('gamepadconnected', (e)=>{
+window.addEventListener('keyup', e => {
+  const action = keyMap[e.key];
+  if (action){ Input[action] = false; heldKeys[action] = false; }
+  if (e.key === 'x' || e.key === 'X'){
+    Input.punch = false; Input.confirm = false;
+    heldKeys.punch = false; heldKeys.confirm = false;
+  }
+  if (e.key === 'Enter' || e.key === ' '){
+    Input.confirm = false; heldKeys.confirm = false;
+  }
+});
+
+window.addEventListener('gamepadconnected', e => {
   gamepadIndex = e.gamepad.index;
   showGamepadBadge();
   unlockAudioContext();
 });
-window.addEventListener('gamepaddisconnected', (e)=>{
-  if(gamepadIndex === e.gamepad.index) gamepadIndex = null;
+window.addEventListener('gamepaddisconnected', e => {
+  if (gamepadIndex === e.gamepad.index) gamepadIndex = null;
 });
 
 function showGamepadBadge(){
   const badge = document.getElementById('gamepadBadge');
-  if(!badge) return;
+  if (!badge) return;
   badge.classList.add('show');
-  setTimeout(()=>badge.classList.remove('show'), 2200);
+  setTimeout(() => badge.classList.remove('show'), 2400);
 }
 
+/* DS4 standard mapping:
+   0=Cross 1=Circle 2=Square 3=Triangle 4=L1 5=R1
+   8=Share 9=Options 12/13/14/15 = dpad Up/Down/Left/Right   */
 function pollGamepad(){
-  if(gamepadIndex === null) return;
+  if (gamepadIndex === null) return;
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   const gp = pads[gamepadIndex];
-  if(!gp) return;
-  const axisX = gp.axes[0] || 0;
-  const dpadLeft = gp.buttons[14] && gp.buttons[14].pressed;
-  const dpadRight = gp.buttons[15] && gp.buttons[15].pressed;
-  const dpadUp = gp.buttons[12] && gp.buttons[12].pressed;
-  const dpadDown = gp.buttons[13] && gp.buttons[13].pressed;
-  Input.left = Input.left || axisX < -0.35 || dpadLeft;
-  Input.right = Input.right || axisX > 0.35 || dpadRight;
-  Input.up = Input.up || dpadUp || (gp.axes[1] < -0.5);
-  Input.down = Input.down || dpadDown || (gp.axes[1] > 0.5);
-  Input.punch = Input.punch || (gp.buttons[0] && gp.buttons[0].pressed);
-  Input.kick = Input.kick || (gp.buttons[2] && gp.buttons[2].pressed);
-  Input.special = Input.special || (gp.buttons[3] && gp.buttons[3].pressed);
-  Input.block = Input.block || (gp.buttons[1] && gp.buttons[1].pressed) || (gp.buttons[4]&&gp.buttons[4].pressed) || (gp.buttons[5]&&gp.buttons[5].pressed);
-  Input.pause = Input.pause || (gp.buttons[9] && gp.buttons[9].pressed) || (gp.buttons[8] && gp.buttons[8].pressed);
-  Input.confirm = Input.confirm || (gp.buttons[0] && gp.buttons[0].pressed);
+  if (!gp) return;
+
+  const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
+  const b = i => gp.buttons[i] && gp.buttons[i].pressed;
+
+  Input.left    = !!heldKeys.left    || ax < -0.35 || b(14);
+  Input.right   = !!heldKeys.right   || ax >  0.35 || b(15);
+  Input.up      = !!heldKeys.up      || ay < -0.50 || b(12);
+  Input.down    = !!heldKeys.down    || ay >  0.50 || b(13);
+  Input.punch   = !!heldKeys.punch   || b(0);
+  Input.kick    = !!heldKeys.kick    || b(2);
+  Input.special = !!heldKeys.special || b(3);
+  Input.block   = !!heldKeys.block   || b(1) || b(4) || b(5);
+  Input.pause   = !!heldKeys.pause   || b(9) || b(8);
+  Input.confirm = !!heldKeys.confirm || b(0);
+  Input.back    = b(1);
 }
 
 function bindTouchButton(elId, action){
   const el = document.getElementById(elId);
-  if(!el) return;
-  const set = (v)=>{ Input[action]=v; };
-  el.addEventListener('touchstart', (e)=>{ e.preventDefault(); set(true); }, {passive:false});
-  el.addEventListener('touchend', (e)=>{ e.preventDefault(); set(false); }, {passive:false});
-  el.addEventListener('touchcancel', ()=>set(false));
-  el.addEventListener('mousedown', ()=>set(true));
-  el.addEventListener('mouseup', ()=>set(false));
-  el.addEventListener('mouseleave', ()=>set(false));
+  if (!el) return;
+  const set = v => { Input[action] = v; heldKeys[action] = v; };
+  el.addEventListener('touchstart', e => { e.preventDefault(); set(true); unlockAudioContext(); }, { passive:false });
+  el.addEventListener('touchend',   e => { e.preventDefault(); set(false); }, { passive:false });
+  el.addEventListener('touchcancel', () => set(false));
+  el.addEventListener('mousedown', () => { set(true); unlockAudioContext(); });
+  el.addEventListener('mouseup',   () => set(false));
+  el.addEventListener('mouseleave',() => set(false));
 }
+
+/* ==================== FIGHTER + SKELETON RIG ==================== */
+const MOVE_DUR    = { punch:260, kick:340, special:460 };
+const MOVE_ACTIVE = { punch:120, kick:170, special:230 };
 
 class Fighter {
   constructor(data, x, facing, isCPU, tintColor){
     this.data = data;
     this.name = data.name;
-    this.maxHp = Math.round(data.hp * (isCPU ? (1+ (Progress.difficultyMult()-1)) : 1));
+    this.artId = artIdFor(data);
+    this.maxHp = Math.round(data.hp * (isCPU ? Progress.difficultyMult : 1));
     this.hp = this.maxHp;
-    this.x = x; this.y = GROUND_Y;
+    this.x = x;
+    this.y = GROUND_Y;
     this.vx = 0; this.vy = 0;
     this.facing = facing;
     this.isCPU = isCPU;
-    this.speed = data.speed * 22;
-    this.reach = data.reach;
-    this.light = data.light;
-    this.heavy = data.heavy;
-    this.baseAI = data.ai;
     this.tint = tintColor || null;
     this.state = 'idle';
-    this.stateTimer = 0;
+    this.stateT = 0;
+    this.stun = 0;
+    this.flashTimer = 0;
     this.jumping = false;
     this.crouching = false;
     this.blocking = false;
-    this.attackCooldown = 0;
+    this.didHit = false;
     this.roundsWon = 0;
-    this.flashTimer = 0;
-    this.images = {};
-    this.aiTimer = 0;
-    this.specialGlow = 0;
-    this.meter = 0;
     this.maxMeter = 100;
+    this.meter = 0;
+    this.specialGlow = 0;
+    this.aiCD = 500;
+    this.width = 150;
+    this.height = 265;
+    this.walkPhase = 0;
   }
 
-  loadImages(basePath){
-    ['front','side','back'].forEach(pose=>{
-      const img = new Image();
-      img.src = `${basePath}/${this.data.mirror ? this.data.sourceId : this.data.id}_${pose}.jpeg`;
-      this.images[pose] = img;
-    });
+  setState(s, t){ this.state = s; this.stateT = t || 0; this.didHit = false; }
+
+  canAct(){
+    return this.stun <= 0 && !['ko','hitstun','punch','kick','special'].includes(this.state);
   }
 
-  get width(){ return 70; }
-  get height(){ return 170; }
+  addMeter(v){ this.meter = Math.min(this.maxMeter, this.meter + v); }
 
-  setState(s, dur){ this.state = s; this.stateTimer = dur || 0; }
-
-  takeHit(damage, attacker){
-    if(this.state === 'ko') return;
-    let dmg = damage;
-    if(this.blocking){ dmg = damage * 0.175; }
-    this.hp = Math.max(0, this.hp - dmg);
-    this.meter = Math.min(this.maxMeter, this.meter + dmg * 0.6);
-    this.flashTimer = 160;
-    this.vx = (this.x < attacker.x ? -1 : 1) * 4;
-    if(!this.blocking){ this.setState('hitstun', HITSTUN_MS); }
-    if(this.hp <= 0){ this.setState('ko', 99999); }
-  }
-
-  update(dt, opponent, bounds){
-    if(this.flashTimer>0) this.flashTimer -= dt;
-    if(this.specialGlow>0) this.specialGlow -= dt;
-    if(this.attackCooldown>0) this.attackCooldown -= dt;
-    if(this.state === 'ko'){ return; }
-    if(this.state === 'hitstun'){
-      this.stateTimer -= dt;
-      this.x += this.vx;
-      this.vx *= 0.85;
-      this.x = Math.max(bounds.l, Math.min(bounds.r, this.x));
-      if(this.stateTimer <= 0){ this.setState('idle',0); }
-      return;
+  tryAttack(type, other){
+    if (!this.canAct() || this.jumping) return false;
+    if (type === 'special'){
+      if (this.meter < this.maxMeter) return false;   // hard gate until full
+      this.meter = 0;
+      this.specialGlow = MOVE_DUR.special;
     }
-    if(['punch','kick','special'].includes(this.state)){
-      this.stateTimer -= dt;
-      if(this.stateTimer <= 0){ this.setState('idle',0); }
-      return;
-    }
-    this.x = Math.max(bounds.l, Math.min(bounds.r, this.x));
-    this.facing = opponent.x > this.x ? 1 : -1;
-    if(this.jumping){
-      this.y += this.vy;
-      this.vy += 0.9;
-      if(this.y >= GROUND_Y){ this.y = GROUND_Y; this.jumping=false; this.vy=0; if(this.state==='jump') this.setState('idle',0); }
-    }
-  }
-
-  distanceTo(opp){ return Math.abs(this.x - opp.x); }
-
-  tryAttack(type, opponent, onHit){
-    if(this.attackCooldown > 0) return false;
-    if(['punch','kick','special'].includes(this.state)) return false;
-    if(this.state === 'hitstun' || this.state === 'ko') return false;
-    if(type==='special' && this.meter < this.maxMeter) return false;
-    let dur, dmg, reachMul, cd;
-    if(type==='punch'){ dur=260; dmg=this.light; reachMul=1.0; cd=120; }
-    else if(type==='kick'){ dur=380; dmg=this.heavy; reachMul=1.15; cd=220; }
-    else { dur=560; dmg=this.heavy*1.7; reachMul=1.3; cd=500; this.specialGlow = 400; this.meter = 0; }
-    this.setState(type, dur);
-    this.attackCooldown = cd;
-    const dist = this.distanceTo(opponent);
-    const effectiveReach = this.reach * reachMul;
-    setTimeout(()=>{
-      if(this.state !== type) return;
-      if(dist <= effectiveReach && opponent.state !== 'ko'){
-        opponent.takeHit(dmg, this);
-        const meterGain = type === 'punch' ? 8 : type === 'kick' ? 14 : 0;
-        this.meter = Math.min(this.maxMeter, this.meter + meterGain);
-        if(onHit) onHit(dmg, type);
-      }
-    }, Math.min(120, dur*0.35));
+    this.setState(type, 0);
     return true;
+  }
+
+  update(dt, other, leftBound, rightBound){
+    if (this.stun > 0){
+      this.stun -= dt;
+      if (this.stun <= 0 && this.state === 'hitstun') this.setState('idle');
+    }
+    if (this.flashTimer > 0) this.flashTimer -= dt;
+    if (this.specialGlow > 0) this.specialGlow -= dt;
+
+    if (this.state !== 'ko'){
+      this.addMeter(dt * 0.006);                       // passive charge
+      if (other) this.facing = (other.x > this.x) ? 1 : -1;
+    }
+
+    if (this.jumping){
+      this.vy += 0.055 * dt;
+      this.y += this.vy * dt * 0.06;
+      if (this.y >= GROUND_Y){
+        this.y = GROUND_Y; this.vy = 0; this.jumping = false;
+        if (this.state === 'jump') this.setState('idle');
+      }
+    }
+
+    if (['punch','kick','special'].includes(this.state)){
+      this.stateT += dt;
+      if (this.stateT >= MOVE_ACTIVE[this.state] && !this.didHit && other){
+        this.didHit = true;
+        this.resolveHit(other);
+      }
+      if (this.stateT >= MOVE_DUR[this.state]) this.setState('idle');
+    }
+
+    if (Math.abs(this.vx) > 0.1) this.walkPhase += dt * 0.012;
+
+    this.x += this.vx;
+    this.vx *= 0.72;
+    this.x = Math.max(leftBound, Math.min(rightBound, this.x));
+  }
+
+  resolveHit(other){
+    if (other.state === 'ko') return;
+    const dist = Math.abs(this.x - other.x);
+    const rangeMult = this.state === 'punch' ? 1.0 : this.state === 'kick' ? 1.15 : 1.45;
+    if (dist > this.data.reach * rangeMult + 40) return;
+
+    let dmg = this.state === 'punch' ? this.data.light
+            : this.state === 'kick'  ? this.data.heavy
+            : Math.round(this.data.heavy * 1.6);
+
+    this.addMeter(6);
+
+    if (other.blocking){
+      dmg = Math.max(1, Math.round(dmg * 0.17));      // chip damage remains
+      other.flashTimer = 120;
+      other.addMeter(4);
+    } else {
+      other.setState('hitstun');
+      other.stun = HITSTUN_MS;
+      other.flashTimer = 200;
+      other.vx = (other.x > this.x ? 1 : -1) * 6;
+      other.addMeter(8);
+    }
+
+    other.hp = Math.max(0, other.hp - dmg);
+    if (other.hp <= 0) other.setState('ko');
+  }
+
+  /* joint positions in local space, animated per state */
+  rig(){
+    const h = this.height, w = this.width;
+    const st = this.state;
+    const prog = MOVE_DUR[st] ? Math.min(1, this.stateT / MOVE_DUR[st]) : 0;
+    const swing = Math.sin(prog * Math.PI);
+    const walk = Math.sin(this.walkPhase) * (Math.abs(this.vx) > 0.1 ? 1 : 0);
+    const crouch = this.crouching ? 0.22 : 0;
+
+    const hipY  = -h * (0.46 - crouch);
+    const shY   = -h * (0.80 - crouch * 0.7);
+    const headY = -h * (0.92 - crouch * 0.6);
+
+    let armR   = { x:  w * 0.20, y: shY + h * 0.16 };
+    let armL   = { x: -w * 0.20, y: shY + h * 0.16 };
+    let elbowR = { x:  w * 0.16, y: shY + h * 0.08 };
+
+    if (st === 'punch'){
+      armR   = { x: w * (0.18 + 0.52 * swing), y: shY + h * 0.06 };
+      elbowR = { x: w * (0.14 + 0.26 * swing), y: shY + h * 0.07 };
+    } else if (st === 'special'){
+      armR   = { x: w * (0.20 + 0.66 * swing), y: shY + h * (0.04 - 0.10 * swing) };
+      elbowR = { x: w * (0.16 + 0.32 * swing), y: shY + h * 0.05 };
+    } else if (st === 'block'){
+      armR   = { x: w * 0.06, y: shY + h * 0.02 };
+      elbowR = { x: w * 0.14, y: shY + h * 0.10 };
+      armL   = { x: -w * 0.04, y: shY + h * 0.04 };
+    } else if (st === 'hitstun'){
+      armR   = { x: w * 0.28, y: shY + h * 0.22 };
+      elbowR = { x: w * 0.22, y: shY + h * 0.14 };
+    }
+
+    let legR  = { x: w * (0.14 + walk * 0.10), y: 0 };
+    let kneeR = { x: w * 0.13, y: hipY * 0.42 };
+    if (st === 'kick'){
+      legR  = { x: w * (0.16 + 0.70 * swing), y: -h * (0.10 + 0.26 * swing) };
+      kneeR = { x: w * (0.15 + 0.34 * swing), y: hipY * 0.42 - h * 0.06 * swing };
+    }
+    const legL  = { x: -w * (0.14 + walk * 0.10), y: 0 };
+    const kneeL = { x: -w * 0.13, y: hipY * 0.42 };
+
+    return { hipY, shY, headY, armR, armL, elbowR, legR, legL, kneeR, kneeL };
   }
 }
 
-function updateAI(fighter, opponent, dt, difficultyMult){
-  fighter.aiTimer -= dt;
-  const aggression = Math.min(0.98, fighter.baseAI * difficultyMult);
-  if(fighter.aiTimer > 0) return;
-  fighter.aiTimer = 140 + Math.random()*220 * (1-aggression);
-
-  const dist = fighter.distanceTo(opponent);
-  const reachOk = dist <= fighter.reach * 1.1;
-
-  if(opponent.state === 'punch' || opponent.state === 'kick' || opponent.state === 'special'){
-    if(Math.random() < aggression*0.6){
-      fighter.blocking = true;
-      fighter.setState('block', 200);
-      return;
-    }
-  }
-  fighter.blocking = false;
-
-  if(reachOk){
-    const roll = Math.random();
-    const canSpecial = fighter.meter >= fighter.maxMeter;
-    if(canSpecial && roll < aggression*0.55){
-      fighter.tryAttack('special', opponent);
-    } else if(roll < aggression*0.5){
-      fighter.tryAttack(Math.random()<0.5?'punch':'kick', opponent);
-    } else if(roll < aggression*0.7 + 0.15){
-      fighter.x += fighter.facing * -3.5;
-    }
-  } else {
-    const dir = opponent.x > fighter.x ? 1 : -1;
-    fighter.x += dir * fighter.speed * 0.045 * (0.6+aggression*0.6);
-    if(Math.random() < 0.01) { fighter.jumping = true; fighter.vy = -13; fighter.setState('jump',0); }
-  }
+/* which photo to show for the current state */
+function poseForFighter(f){
+  if (f.state === 'block') return 'back';
+  if (f.state === 'hitstun' || f.state === 'ko') return 'front';
+  if (['punch','kick','special'].includes(f.state)) return 'side';
+  if (Math.abs(f.vx) > 1.6 && !f.jumping) return 'side';
+  return 'front';
 }

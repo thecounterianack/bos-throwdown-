@@ -1,79 +1,146 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>BOS: THROWDOWN</title>
-<style>
-:root{--bg:#050508;--panel:#0d1018;--line:#334052;--red:#df2e35;--gold:#f4bd2a;--ink:#e9efff;--muted:#91a1bb;--blue:#38aaff}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}button{font:inherit;color:inherit}.screen{display:none;position:fixed;inset:0;z-index:10;align-items:center;justify-content:center;flex-direction:column;overflow:auto;background:radial-gradient(ellipse at 50% 15%,#1b2132 0,#070911 48%,#030305 100%)}.screen.on{display:flex}.scan,.vignette{pointer-events:none;position:fixed;inset:0;z-index:70}.scan{opacity:.12;background:repeating-linear-gradient(0deg,#fff 0 1px,transparent 1px 4px)}.vignette{box-shadow:inset 0 0 120px 35px #000b}.small{font-size:11px;letter-spacing:2px;color:var(--muted);line-height:1.7;text-align:center}.btn{border:1px solid #59677e;background:#0d121dec;color:#eef4ff;padding:13px 19px;font-size:12px;letter-spacing:2px;cursor:pointer;margin:8px}.btn:focus,.btn.focus{outline:2px solid var(--gold);outline-offset:2px}.btn.hot{border-color:var(--red);background:#381116}.btn:active{transform:scale(.97)}
-/* loader */#load{gap:13px}.loadTitle{font-size:clamp(30px,9vw,54px);font-weight:900;letter-spacing:7px;text-shadow:0 0 22px #df2e35}.loadTrack{width:min(76vw,450px);height:17px;border:1px solid #7b2027;background:#11080a}.loadFill{height:100%;width:0;background:linear-gradient(90deg,#7b2027,#ff4a51);transition:width .16s}.error{max-width:min(84vw,620px);line-height:1.7;color:#ffc7c7;text-align:center;font-size:11px}
-/* title */#title{cursor:pointer}.pixelSkull{width:192px;height:166px;position:relative;filter:drop-shadow(0 0 16px #e43039);image-rendering:pixelated;margin-bottom:8px}.pixelSkull i{position:absolute;width:14px;height:14px;background:#d9d4bf;box-shadow:0 0 0 2px #202027}.pixelSkull i.eye{background:#ff303a;box-shadow:0 0 12px #ff2029}.pixelSkull i.dark{background:#22242c}.logo{font-size:clamp(43px,13vw,78px);font-weight:950;line-height:.82;letter-spacing:7px;text-align:center;text-shadow:3px 3px #000,0 0 25px #d62530}.logo b{color:var(--red)}.subtitle{margin-top:15px;color:#9dacc3;font-size:11px;text-align:center;line-height:1.8;letter-spacing:3px}.pulse{animation:pulse 1.1s steps(2) infinite;color:#f2c04b}.meta{margin-top:12px;color:#7f8ca5;font-size:10px;letter-spacing:1px}.cracks{display:none;position:absolute;inset:0;z-index:85;pointer-events:none;background:radial-gradient(circle at var(--x,50%) var(--y,50%),transparent 0 3%,#fff8 3.3% 3.5%,transparent 3.7%),linear-gradient(34deg,transparent 49.5%,#f4f8ff 49.8% 50.2%,transparent 50.5%),linear-gradient(-58deg,transparent 49.5%,#f4f8ff 49.8% 50.2%,transparent 50.5%),linear-gradient(104deg,transparent 49.5%,#f4f8ff 49.8% 50.2%,transparent 50.5%);background-size:100% 100%,55% 3px,52% 3px,45% 3px;background-position:center,50% 50%,50% 50%,50% 50%;background-repeat:no-repeat;animation:crack .75s ease-out forwards}.cracks.on{display:block}@keyframes crack{0%{opacity:0;transform:scale(.15)}18%{opacity:1}100%{opacity:0;transform:scale(1.25)}}@keyframes pulse{50%{opacity:.25}}.gate{display:none;position:absolute;z-index:90;inset:0;align-items:center;justify-content:center;background:#050508dd;color:#fff;font-size:clamp(17px,5vw,26px);font-weight:bold;text-align:center;padding:30px;letter-spacing:3px}.gate.on{display:flex}
-/* select */#select{justify-content:flex-start;padding:20px 10px 35px}.heading{font-size:17px;letter-spacing:4px;margin:5px 0 14px;color:#fff}.grid{width:min(96vw,760px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.card{border:2px solid #263247;background:#0b101b;min-height:125px;padding:5px;cursor:pointer;position:relative;overflow:hidden}.card img{display:block;width:100%;height:87px;object-fit:contain;object-position:center;mix-blend-mode:normal}.card span{display:block;background:#060913e9;text-align:center;font-size:9px;letter-spacing:1px;padding:5px 1px;min-height:26px}.card em{position:absolute;top:4px;left:5px;color:#d1d8e5;font-style:normal;font-size:8px}.card.focus{border-color:var(--gold);box-shadow:0 0 15px #f4bd2a77}.card.selected{border-color:var(--red);box-shadow:0 0 18px #e02e3577}.stats{width:min(94vw,510px);min-height:77px;border:1px solid #39465c;background:#090d16e8;margin:12px;padding:9px;color:#bac7db;font-size:10px;line-height:1.8;text-align:center}.statname{color:#fff;font-size:13px;letter-spacing:2px}.bar{height:6px;background:#192131;border:1px solid #354158;margin:3px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,#84303a,#f1c143)}
-/* vs + intro */.faces{display:flex;align-items:center;gap:clamp(15px,6vw,55px);margin-top:12px}.face{width:min(34vw,185px);text-align:center;font-size:11px;letter-spacing:2px}.face img{width:100%;height:min(37vw,200px);object-fit:contain;border:2px solid #44536c;background:#080b12}.vs{font-size:30px;color:var(--red);font-weight:bold}.taunt{max-width:600px;margin:13px 15px;color:#cbd6e8;text-align:center;font-size:11px;line-height:1.8;letter-spacing:1px}.progress{position:fixed;bottom:0;left:0;height:5px;width:0;background:var(--red)}#intro{background:#000}.introA{max-width:min(85vw,850px);padding:0 15px;text-align:center;font-size:clamp(19px,5vw,39px);line-height:1.35;letter-spacing:3px}.introB{max-width:min(84vw,700px);padding:0 15px;margin-top:17px;text-align:center;color:#aebcd1;font-size:clamp(11px,3vw,16px);line-height:1.9;letter-spacing:1px}.skip{position:fixed;right:13px;top:max(13px,env(safe-area-inset-top));z-index:75}
-/* fight */#fight{background:#04060b;overflow:hidden}.hud{display:none;position:fixed;z-index:50;inset:0;pointer-events:none}.hud.on{display:block}.name{position:absolute;top:12px;font-size:10px;letter-spacing:2px}.name.left{left:10px}.name.right{right:10px;text-align:right}.hp{position:absolute;top:30px;width:38%;height:17px;background:#121925;border:1px solid #58657a}.hp.left{left:10px}.hp.right{right:10px}.hp i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#8d2630,#ff464e);transition:width .15s}.hp.right i{margin-left:auto;background:linear-gradient(90deg,#ff464e,#8d2630)}.meter{position:absolute;top:52px;width:28%;height:6px;background:#0b111e;border:1px solid #526176}.meter.left{left:10px}.meter.right{right:10px}.meter i{display:block;height:100%;background:#32a8ff;transition:width .1s}.meter.right i{margin-left:auto}.clock{position:absolute;top:13px;left:50%;transform:translateX(-50%);font-size:21px}.msg{position:absolute;top:37%;left:0;right:0;text-align:center;font-size:clamp(25px,7vw,48px);font-weight:900;letter-spacing:4px;text-shadow:3px 3px #000;color:#fff}.msg.red{color:#ff3d47}.badge{position:fixed;z-index:80;top:77px;left:50%;transform:translateX(-50%);display:none;background:#101722ee;border:1px solid #ff3d47;padding:6px 10px;color:#9cff9c;font-size:9px;letter-spacing:1px}.badge.on{display:block}.touch{position:fixed;z-index:65;bottom:max(8px,env(safe-area-inset-bottom));left:0;right:0;display:flex;justify-content:space-between;padding:0 10px}.touchGroup{display:flex;gap:6px;align-items:flex-end}.pad{width:52px;height:52px;border:1px solid #59677e;border-radius:8px;background:#0d1421dd;color:#eef4ff;font-size:12px}.pad:active{background:#4d5b72}.pad.sp{border-color:#d2333b;background:#3c1117}.pausePanel{display:none;z-index:75;position:fixed;inset:0;align-items:center;justify-content:center;flex-direction:column;background:#03050adf}.pausePanel.on{display:flex}.fightCanvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none}.report{position:fixed;z-index:90;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#afbbcf}.weapon{color:#f4bd2a}
-@media(min-width:700px){.grid{grid-template-columns:repeat(5,1fr)}.touch{max-width:680px;left:50%;transform:translateX(-50%);width:100%}}
-</style>
-</head><body>
-<canvas id="canvas" class="fightCanvas"></canvas><div class="scan"></div><div class="vignette"></div><div id="cracks" class="cracks"></div><div id="gp" class="badge">● PS4 CONTROLLER CONNECTED</div>
-<section id="load" class="screen on"><div class="loadTitle">BOS: THROWDOWN</div><div class="loadTrack"><div id="loadFill" class="loadFill"></div></div><div id="loadPct">0%</div><div id="loadText" class="small">LOADING THE LOT...</div><div id="loadError" class="error"></div></section>
-<section id="title" class="screen"><div class="pixelSkull" id="skull"></div><div class="logo">BOS:<br><b>THROWDOWN</b></div><div class="subtitle">NINE DEEP · ONE LEADER<br>BROTHERS OF SHADOW</div><div class="subtitle pulse">TAP OR PRESS CROSS TO START</div><div id="meta" class="meta"></div><div id="gate" class="gate">TAP OR PUNCH THE SCREEN<br>TO FIGHT</div></section>
-<section id="select" class="screen"><div class="heading">SELECT YOUR FIGHTER</div><div class="small">D-PAD / STICK TO MOVE · CROSS TO CONFIRM</div><div id="grid" class="grid"></div><div id="stats" class="stats"></div><button id="lock" class="btn hot">LOCK IN FIGHTER</button></section>
-<section id="vs" class="screen"><div class="faces"><div class="face"><img id="pFace"><div id="pName"></div></div><div class="vs">VS</div><div class="face"><img id="eFace"><div id="eName"></div></div></div><div id="rung" class="small"></div><div id="taunt" class="taunt"></div><button id="begin" class="btn hot">CROSS TO BEGIN</button></section>
-<section id="intro" class="screen"><button id="skip" class="btn skip">SKIP ▶▶</button><div id="introA" class="introA"></div><div id="introB" class="introB"></div><div id="introProgress" class="progress"></div></section>
-<section id="fight" class="screen"><div id="hud" class="hud"><div id="n1" class="name left"></div><div id="n2" class="name right"></div><div class="hp left"><i id="hp1"></i></div><div class="hp right"><i id="hp2"></i></div><div class="meter left"><i id="m1"></i></div><div class="meter right"><i id="m2"></i></div><div id="clock" class="clock">90</div><div id="msg" class="msg"></div></div><div class="touch"><div class="touchGroup"><button class="pad" data-k="left">◀</button><button class="pad" data-k="jump">▲</button><button class="pad" data-k="right">▶</button></div><div class="touchGroup"><button class="pad" data-k="crouch">▼</button><button class="pad" data-k="block">BLK</button><button class="pad" data-k="punch">PUN</button><button class="pad" data-k="kick">KIC</button><button class="pad sp" data-k="special">SPC</button></div></div></section>
-<section id="win" class="screen"><div id="winTitle" class="heading"></div><div id="winSub" class="small"></div><div id="winText" class="taunt"></div><button id="continue" class="btn hot">CONTINUE</button></section>
-<section id="pause" class="pausePanel"><div class="heading">PAUSED</div><div class="small">THE CROWD IS STILL THERE</div><button id="resume" class="btn hot">RESUME</button><button id="quit" class="btn">BACK TO TITLE</button></section>
-<div id="status" class="report"></div>
-<script>
-'use strict';
-const AS='assets/', AU='audio/';
-const roster=[
-{id:'tmoney',name:'T MONEY',r:1,hp:100,spd:5,reach:76,light:6,heavy:11,ai:.28,weapon:'CD',special:'SPINNING CD'},
-{id:'sikotik',name:'SIKOTIK',r:2,hp:100,spd:6,reach:72,light:7,heavy:10,ai:.33,weapon:'VAPE',special:'VAPOR BLAST'},
-{id:'ryan',name:'RYAN THE BROADCASTER',r:3,hp:105,spd:5,reach:78,light:6,heavy:11,ai:.37,weapon:'MIC',special:'BROADCAST BASH'},
-{id:'brayden',name:'BRAYDEN B.O.S.',r:4,hp:107,spd:6,reach:75,light:7,heavy:11,ai:.42,weapon:'MIC',special:'B.O.S. MIC DROP'},
-{id:'bcthekid',name:'B.C. THE KID',r:5,hp:108,spd:6,reach:74,light:7,heavy:11,ai:.46,weapon:'BAT',special:'HOME RUN'},
-{id:'ali3nlee',name:'ALI3N LEE',r:6,hp:112,spd:6,reach:77,light:8,heavy:12,ai:.52,weapon:'ENERGY BLASTER',special:'ALI3N SHOT'},
-{id:'xackley',name:'X-ACKLEY',r:8,hp:118,spd:6,reach:81,light:8,heavy:13,ai:.58,weapon:'KATANA',special:'RECORDED SLASH'},
-{id:'tsspectre',name:'T.S. THE SPECTRE',r:9,hp:122,spd:7,reach:83,light:8,heavy:13,ai:.64,weapon:'SCYTHE',special:'GRAVE BAR'},
-{id:'wraith',name:'WRAITH',r:10,hp:140,spd:7,reach:87,light:10,heavy:16,ai:.78,weapon:'CHAIN SCYTHE',special:'CARRY THE CREW'}];
-const shadows=[
-{id:'shadowx',name:'SHADOW X-ACKLEY',hp:155,spd:8,reach:89,light:11,heavy:17,ai:.87,weapon:'CORRUPTED KATANA',special:'RAGE SLASH',shadow:true},
-{id:'shadowtsspectre',name:'SHADOW T.S. SPECTRE',hp:165,spd:8,reach:92,light:12,heavy:18,ai:.92,weapon:'CORRUPTED SCYTHE',special:'DARK TRACK',shadow:true},
-{id:'shadowwraith',name:'SHADOW WRAITH',hp:180,spd:9,reach:96,light:13,heavy:20,ai:.98,weapon:'MASSIVE CHAIN SCYTHE',special:'FINAL CARRY',shadow:true}];
-const img=new Map(),missing=[];let songs={menu:new Audio(AU+'song3.mp3'),intro:new Audio(AU+'song1.mp3'),boss:new Audio(AU+'song2.mp3')},curSong=null,sound=true,audioUnlocked=false;
-Object.values(songs).forEach(a=>{a.preload='auto';a.volume=.57;a.loop=true});
-function path(id,p){return AS+id+'_'+p+'.jpeg'}function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));document.getElementById(id).classList.add('on')}
-function makeSkull(){let s=document.getElementById('skull');let cells=[[5,0],[6,0],[7,0],[8,0],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],[9,1],[10,1],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],[9,2],[10,2],[11,2],[2,3],[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[9,3],[10,3],[11,3],[2,4],[3,4],[4,4],[9,4],[10,4],[11,4],[3,5],[4,5],[5,5],[6,5],[7,5],[8,5],[9,5],[10,5],[4,6],[5,6],[6,6],[7,6],[8,6],[9,6],[4,7],[5,7],[6,7],[7,7],[8,7],[9,7],[5,8],[6,8],[7,8],[8,8],[5,9],[6,9],[7,9],[8,9]];cells.forEach(([x,y])=>{let e=document.createElement('i');e.style.left=x*14+'px';e.style.top=y*14+'px';if((x===4||x===5)&&y===3||((x===8||x===9)&&y===3))e.className='eye';if((x===6||x===7)&&y===4)e.className='dark';s.appendChild(e)})}
-async function preload(){const list=[];[...roster,...shadows].forEach(f=>['front','side','back','profile'].forEach(p=>list.push({t:'i',u:path(f.id,p)})));Object.values(songs).forEach(a=>list.push({t:'a',a}));let n=0;const tick=()=>{n++;loadFill.style.width=(n/list.length*100)+'%';loadPct.textContent=Math.round(n/list.length*100)+'%'};await Promise.all(list.map(x=>new Promise(resolve=>{if(x.t==='i'){let im=new Image();im.onload=()=>{img.set(x.u,im);tick();resolve()};im.onerror=()=>{missing.push(x.u);tick();resolve()};im.src=x.u}else{x.a.oncanplaythrough=()=>{tick();resolve()};x.a.onerror=()=>{missing.push(x.a.src);tick();resolve()};x.a.load();setTimeout(()=>{if(x.a.readyState<2){tick();resolve()}},9000)}})));if(missing.length){loadText.textContent='SOME OPTIONAL POSES ARE MISSING — FRONT-POSE FALLBACK ENABLED';loadError.textContent=missing.map(x=>x.split('/').pop()).join(' · ')}else loadText.textContent='THE LOT IS READY';setTimeout(()=>{show('title');titleMeta();music('menu',0)},800)}
-function music(k,time){if(!sound)return;Object.entries(songs).forEach(([id,a])=>{if(id!==k)a.pause()});let a=songs[k];if(curSong===k&&!a.paused)return;curSong=k;if(typeof time==='number')try{a.currentTime=time}catch(e){}a.play().catch(()=>{status.textContent='TAP SCREEN ONCE TO ENABLE AUDIO'})}function stopMusic(){Object.values(songs).forEach(a=>a.pause())}function unlock(){if(audioUnlocked)return;audioUnlocked=true;Object.values(songs).forEach(a=>{let was=a.paused;a.play().then(()=>{if(was){a.pause();a.currentTime=0}}).catch(()=>{})});if(curSong&&sound)songs[curSong].play().catch(()=>{})}
-let state='title',cursor=0,pick=null,ladder=[],rung=0,gate=false,game=null,last=0,gpIndex=null;const keys={left:false,right:false,jump:false,crouch:false,block:false,punch:false,kick:false,special:false};let prev={};
-function titleMeta(){let c=+localStorage.getItem('bosClears')||0;meta.textContent=`TOWER CLEARS: ${c} · SHADOW TIER ${Math.min(3,c)}/3 · FIGHTERS ARE ${c*5}% HARDER`}
-function gateStart(x,y){if(state!=='title'||gate)return;gate=true;unlock();cracks.style.setProperty('--x',x+'px');cracks.style.setProperty('--y',y+'px');cracks.classList.add('on');gateEl.classList.add('on');setTimeout(()=>{cracks.classList.remove('on');gateEl.classList.remove('on');gate=false;startSelect()},1400)}
-const gateEl=document.getElementById('gate');title.addEventListener('pointerdown',e=>gateStart(e.clientX,e.clientY));
-function startSelect(){state='select';show('select');cursor=0;pick=null;drawGrid();music('menu',0)}
-function drawGrid(){grid.innerHTML='';roster.forEach((f,i)=>{let b=document.createElement('button');b.className='card '+(i===cursor?'focus':'')+(pick&&pick.id===f.id?' selected':'');b.innerHTML=`<em>RUNG ${f.r}</em><img src="${path(f.id,'front')}"><span>${f.name}</span>`;b.onclick=()=>{cursor=i;choose(false);drawGrid()};grid.appendChild(b)});let f=roster[cursor];stats.innerHTML=`<div class="statname">${f.name}</div>HP ${f.hp} · SPD ${f.spd} · REACH ${f.reach}<div class="bar"><i style="width:${f.hp/1.8}%"></i></div>LIGHT ${f.light} · HEAVY ${f.heavy} · <span class="weapon">SPECIAL: ${f.weapon}</span>`}
-function choose(confirm){let f=roster[cursor];if(!pick||pick.id!==f.id){pick=f;drawGrid();return}if(confirm){ladder=roster.map(x=>x.id===pick.id?{...x,id:'mirror_'+x.id,mirror:true,sourceId:x.id,name:x.name+' MIRROR',shadow:true}:x);rung=0;showVS()}}
-lock.onclick=()=>choose(true);
-function pose(f,p){let id=f.mirror?f.sourceId:f.id;return img.get(path(id,p))||img.get(path(id,'front'))}function showVS(){state='vs';show('vs');let foe=ladder[rung];pFace.src=path(pick.id,'profile');eFace.src=path(foe.mirror?foe.sourceId:foe.id,'profile');pName.textContent=pick.name;eName.textContent=foe.shadow?'??? ??? ???':foe.name;rungEl.textContent=`RUNG ${rung+1} OF ${ladder.length}`;tauntEl.textContent=foe.mirror?'YOU AGAINST EVERYTHING YOU TRY NOT TO SEE.':foe.name==='WRAITH'?'I CARRY EVERYTHING IN THIS CREW. TONIGHT THAT INCLUDES YOU.':`SPECIAL WEAPON: ${foe.weapon}`;music('menu',0)}const rungEl=document.getElementById('rung'),tauntEl=document.getElementById('taunt');begin.onclick=()=>{if(rung===0)startIntro();else startFight()};
-const cards=[[0,'CARL JUNG CALLED IT THE SHADOW.','The unknown dark side of the personality. The part of you nobody asked you to approve.'],[11,'INSTINCTIVE. IRRATIONAL.','It takes what you cannot stand about yourself and goes looking for it in somebody else.'],[19,"THAT'S CALLED PROJECTION.",'Every fight that ever started in this lot started right there.'],[26,'A VEIL THAT KEEPS THICKENING.','Your ego on one side. The real world on the other. Everybody carries one.'],[35,'THE LESS YOU LIVE WITH IT,','the blacker and denser it gets. Jung wrote that. He never had to prove it in a parking lot.'],[44,'SO WE DON’T RUN FROM OURS.','That is why they call us the BROTHERS OF SHADOW.'],[51,'WE FIGHT THE DEMON HEAD ON.','The demon fights back. It always fights back. You never get fully rid of it.'],[60,'EVERYBODY HAS A SHADOW.','Accept that and you get accepted in. Nine deep, one leader, and the leader gets decided tonight.'],[68,'THEY TRY TO SHORTEN MY LIFESPAN.','I never wanted the fight. It came my way anyway. So I stand my ground.']];let introStart=0,introIdx=-1;function startIntro(){state='intro';show('intro');stopMusic();songs.intro.loop=false;songs.intro.currentTime=0;songs.intro.play().catch(()=>{});introStart=performance.now();introIdx=-1;requestAnimationFrame(introLoop)}function introLoop(){if(state!=='intro')return;let sec=(performance.now()-introStart)/1000,idx=0;for(let i=0;i<cards.length;i++)if(sec>=cards[i][0])idx=i;if(idx!==introIdx){introIdx=idx;introA.textContent=cards[idx][1];introB.textContent=cards[idx][2]}introProgress.style.width=Math.min(100,sec/75*100)+'%';if(sec>=75){finishIntro();return}requestAnimationFrame(introLoop)}function finishIntro(){if(state!=='intro')return;state='transition';startFight(true)}skip.onclick=finishIntro;
-function fighter(data,x,face,cpu){return{d:data,x,y:0,face,cpu,hp:data.hp,max:data.hp,meter:0,st:'idle',t:0,vx:0,vy:0,air:false,flash:0,hit:false,ai:300,weaponT:0,wins:0}}
-function startFight(fromIntro=false){state='fight';show('fight');hud.classList.add('on');let foe=ladder[rung];game={p1:fighter(pick,.24,1,false),p2:fighter(foe,.76,-1,true),timer:90,round:1,ready:2200,over:false,last:performance.now(),fromIntro};n1.textContent=pick.name;n2.textContent=foe.shadow?'??? ??? ???':foe.name;msg.textContent='ROUND 1';msg.className='msg red';if(!fromIntro)music(foe.name==='WRAITH'||foe.shadow?'boss':'menu',0);setTimeout(()=>{if(game&&!game.over){msg.textContent='FIGHT';setTimeout(()=>{if(game)msg.textContent=''},550)}},1100);requestAnimationFrame(loop)}
-function startMove(f,type,o){if(f.t||f.st==='ko'||f.st==='hit')return;if(type==='special'&&f.meter<100)return;f.st=type;f.t=type==='punch'?260:type==='kick'?380:620;f.hit=false;if(type==='special'){f.meter=0;f.weaponT=620}let active=type==='punch'?90:type==='kick'?150:220;setTimeout(()=>{if(!game||f.st!==type||f.hit)return;f.hit=true;let range=f.d.reach*(type==='special'?1.55:type==='kick'?1.18:1),dist=Math.abs(f.x-o.x)*960;if(dist>range)return;let dmg=type==='punch'?f.d.light:type==='kick'?f.d.heavy:Math.round(f.d.heavy*1.85);if(o.st==='block')dmg=Math.max(1,Math.round(dmg*.18));o.hp=Math.max(0,o.hp-dmg);o.meter=Math.min(100,o.meter+dmg*.65);o.flash=180;o.st=o.hp?'hit':'ko';o.t=o.hp?280:99999;o.vx=o.x<f.x?-0.018:0.018;if(type==='punch')f.meter=Math.min(100,f.meter+9);if(type==='kick')f.meter=Math.min(100,f.meter+15)},active)}
-function input(f){if(f.st==='ko'||f.st==='hit'||f.t)return;let dir=(keys.left?-1:0)+(keys.right?1:0);if(keys.jump&&!f.air){f.air=true;f.vy=-.0017;f.st='jump'}if(keys.crouch){f.st='crouch';return}if(keys.block){f.st='block';return}if(edge('punch'))startMove(f,'punch',game.p2);else if(edge('kick'))startMove(f,'kick',game.p2);else if(edge('special'))startMove(f,'special',game.p2);else{f.st=dir?'walk':'idle';f.x+=dir*f.d.spd*.00014}}
-function ai(f,o,dt){if(f.t||f.st==='ko'||f.st==='hit')return;f.ai-=dt;if(f.ai>0)return;let dist=Math.abs(f.x-o.x)*960;f.ai=120+Math.random()*300;if(dist>f.d.reach*.85){f.x+=(o.x>f.x?1:-1)*f.d.spd*.00016;f.st='walk'}else{let r=Math.random();if(r<.18)f.st='block';else if(f.meter>=100&&r<.34)startMove(f,'special',o);else if(r<.66)startMove(f,'punch',o);else startMove(f,'kick',o)}}
-function updateF(f,o,dt){if(f.flash>0)f.flash-=dt;if(f.weaponT>0)f.weaponT-=dt;if(f.t>0){f.t-=dt;if(f.t<=0&&f.st!=='ko')f.st='idle'}if(f.st==='hit'){f.t-=dt;f.x+=f.vx*dt;f.vx*=.92;if(f.t<=0)f.st='idle'}if(f.air){f.y+=f.vy*dt;f.vy+=.000005*dt;if(f.y>=0){f.y=0;f.vy=0;f.air=false;if(f.st==='jump')f.st='idle'}}f.x=Math.max(.06,Math.min(.94,f.x));f.face=o.x>f.x?1:-1}
-function edge(k){return keys[k]&&!prev[k]}
-function loop(t){if(state!=='fight'||!game)return;let dt=Math.min(40,t-game.last);game.last=t;if(!game.over){if(game.ready>0)game.ready-=dt;else{game.timer-=dt/1000;input(game.p1);ai(game.p2,game.p1,dt);updateF(game.p1,game.p2,dt);updateF(game.p2,game.p1,dt);if(game.p1.hp<=0||game.p2.hp<=0||game.timer<=0)endRound(game.p1.hp>=game.p2.hp?game.p1:game.p2)}}Object.keys(keys).forEach(k=>prev[k]=keys[k]);draw();requestAnimationFrame(loop)}
-function endRound(w){if(game.over)return;game.over=true;w.wins++;msg.textContent=w.d.name+' WINS ROUND';msg.className='msg red';setTimeout(()=>{if(w.wins>=2)endMatch(w);else{game.round++;game.p1=fighter(pick,.24,1,false);game.p2=fighter(ladder[rung],.76,-1,true);game.timer=90;game.over=false;game.ready=1600;msg.textContent='ROUND '+game.round}},1500)}function endMatch(w){hud.classList.remove('on');state='win';show('win');let won=w===game.p1,foe=ladder[rung];winTitle.textContent=won?pick.name+' WINS':foe.name+' HOLDS THE RUNG';winSub.textContent=won?'SPECIAL MOVE UNLOCKED: '+pick.special:'RUN THE LADDER AGAIN';winText.textContent=won?'ONE DOWN. KEEP CLIMBING.':'THE LOT REMEMBERS. COME BACK READY.';continue.textContent=won&&rung<ladder.length-1?'NEXT FIGHT':'RETURN TO TITLE';continue.onclick=()=>{if(won&&rung<ladder.length-1){rung++;showVS()}else if(won){localStorage.setItem('bosClears',(+localStorage.getItem('bosClears')||0)+1);goTitle()}else goTitle()};music('menu',0)}
-function draw(){let c=canvas,ctx=c.getContext('2d'),W=c.width=innerWidth*devicePixelRatio,H=c.height=innerHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=innerWidth;H=innerHeight;ctx.clearRect(0,0,W,H);let floor=H*.79,g=ctx.createLinearGradient(0,0,0,floor);g.addColorStop(0,'#0c101c');g.addColorStop(1,'#20283b');ctx.fillStyle=g;ctx.fillRect(0,0,W,floor);ctx.fillStyle='#070a11';ctx.fillRect(0,floor,W,H-floor);for(let x=0;x<W;x+=65){ctx.strokeStyle='#263149';ctx.globalAlpha=.3;ctx.beginPath();ctx.moveTo(x,floor);ctx.lineTo(W/2+(x-W/2)*.2,H);ctx.stroke()}ctx.globalAlpha=1;if(!game)return;drawF(game.p1,floor,W,H,ctx);drawF(game.p2,floor,W,H,ctx);hp1.style.width=game.p1.hp/game.p1.max*100+'%';hp2.style.width=game.p2.hp/game.p2.max*100+'%';m1.style.width=game.p1.meter+'%';m2.style.width=game.p2.meter+'%';clock.textContent=Math.max(0,Math.ceil(game.timer));}
-function drawF(f,floor,W,H,ctx){let fullH=Math.min(H*.48,W*.32),fullW=fullH*.72,x=f.x*W,y=floor+f.y*H,lean=f.st==='walk'?Math.sin(performance.now()/95)*5:0,att=f.st==='punch'?fullW*.22:f.st==='kick'?fullW*.27:f.st==='special'?fullW*.42:0;ctx.save();ctx.translate(x,y);ctx.scale(f.face,1);ctx.globalAlpha=f.flash>0?.48:1;ctx.fillStyle='rgba(0,0,0,.42)';ctx.beginPath();ctx.ellipse(0,5,fullW*.45,8,0,0,Math.PI*2);ctx.fill();let col=f.d.shadow?'#df2532':'#b8c6dc';ctx.strokeStyle=col;ctx.lineWidth=Math.max(3,fullW*.045);ctx.lineCap='round';let hip=-fullH*.28,sh=-fullH*.72;ctx.beginPath();ctx.moveTo(-fullW*.12,hip);ctx.lineTo(-fullW*.18,0);ctx.moveTo(fullW*.12,hip);ctx.lineTo(fullW*(f.st==='kick'?.50:.18),0);ctx.moveTo(-fullW*.18,sh);ctx.lineTo(-fullW*.27,sh+fullH*.25);ctx.moveTo(fullW*.18,sh);ctx.lineTo(fullW*.25+att,sh+fullH*(f.st==='special'?-0.02:.25));ctx.stroke();let im=pose(f.d,f.st==='walk'||f.st==='punch'||f.st==='kick'||f.st==='special'?'side':f.st==='block'?'back':'front');if(im&&im.complete){let ar=im.naturalWidth/im.naturalHeight,dw=Math.min(fullW*1.45,fullH*ar);ctx.drawImage(im,-dw/2+lean+att*.22,-fullH,dw,fullH)}else{ctx.fillStyle=f.d.shadow?'#59121b':'#39445c';ctx.fillRect(-fullW*.24,-fullH,fullW*.48,fullH)}if(f.weaponT>0){ctx.save();ctx.globalAlpha=.8;ctx.shadowColor=f.d.shadow?'#ff2030':'#f3bd2a';ctx.shadowBlur=18;ctx.strokeStyle=f.d.shadow?'#ff3040':'#f3bd2a';ctx.lineWidth=fullW*.07;ctx.beginPath();if(/SCYTHE/.test(f.d.weapon)){ctx.moveTo(fullW*.18,-fullH*.58);ctx.lineTo(fullW*.85,-fullH*.95);ctx.arc(fullW*.78,-fullH*.96,fullW*.28,.1,2.3)}else if(/CD/.test(f.d.weapon)){ctx.arc(fullW*.75,-fullH*.62,fullW*.16,0,Math.PI*2)}else if(/VAPE/.test(f.d.weapon)){for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(fullW*(.42+i*.12),-fullH*(.65+i*.04),fullW*.13,0,Math.PI*2);ctx.stroke()}}else if(/BLASTER/.test(f.d.weapon)){ctx.moveTo(fullW*.2,-fullH*.62);ctx.lineTo(fullW*1.05,-fullH*.62)}else{ctx.moveTo(fullW*.18,-fullH*.62);ctx.lineTo(fullW*.9,-fullH*.88)}ctx.stroke();ctx.restore()}ctx.restore()}
-function goTitle(){state='title';game=null;show('title');titleMeta();music('menu',0)}
-function menuInput(){pollGP();if(state==='title'&&(edge('punch')||edge('special')))gateStart(innerWidth/2,innerHeight/2);if(state==='select'){if(edge('left')){cursor=(cursor+roster.length-1)%roster.length;drawGrid()}if(edge('right')){cursor=(cursor+1)%roster.length;drawGrid()}if(edge('up')){cursor=(cursor+roster.length-3)%roster.length;drawGrid()}if(edge('crouch')){cursor=(cursor+3)%roster.length;drawGrid()}if(edge('punch'))choose(true)}else if(state==='vs'&&edge('punch'))begin.click();else if(state==='intro'&&(edge('punch')||edge('special')))finishIntro();if(state==='fight'&&edge('block'))togglePause();requestAnimationFrame(menuInput)}
-function togglePause(){if(state==='fight'){state='paused';pause.classList.add('on');songs[curSong]?.pause()}else if(state==='paused'){state='fight';pause.classList.remove('on');songs[curSong]?.play().catch(()=>{})}}resume.onclick=togglePause;quit.onclick=()=>{pause.classList.remove('on');goTitle()};
-const km={ArrowLeft:'left',ArrowRight:'right',ArrowUp:'jump',ArrowDown:'crouch',a:'left',d:'right',w:'jump',s:'crouch',x:'punch',X:'punch',j:'punch',J:'punch',c:'kick',C:'kick',k:'kick',K:'kick',Shift:'special',l:'special',L:'special',v:'block',V:'block',i:'block',I:'block'};addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){keys.punch=true;e.preventDefault()}else if(e.key==='Escape'||e.key==='p'||e.key==='P'){togglePause();return}else if(km[e.key]){keys[km[e.key]]=true;if(e.key.startsWith('Arrow'))e.preventDefault()}unlock()});addEventListener('keyup',e=>{if(e.key==='Enter'||e.key===' ')keys.punch=false;else if(km[e.key])keys[km[e.key]]=false});document.querySelectorAll('[data-k]').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;unlock()});['pointerup','pointerleave','pointercancel'].forEach(q=>b.addEventListener(q,()=>keys[k]=false))});
-function pollGP(){let ps=navigator.getGamepads?navigator.getGamepads():[];if(gpIndex===null){for(let p of ps)if(p){gpIndex=p.index;gp.classList.add('on');setTimeout(()=>gp.classList.remove('on'),2200);break}}let p=ps[gpIndex];if(!p)return;let B=i=>p.buttons[i]&&p.buttons[i].pressed;keys.left=(p.axes[0]||0)<-.4||B(14);keys.right=(p.axes[0]||0)>.4||B(15);keys.jump=(p.axes[1]||0)<-.4||B(12);keys.crouch=(p.axes[1]||0)>.4||B(13);keys.punch=B(0);keys.block=B(1)||B(4)||B(5);keys.kick=B(2);keys.special=B(3)}addEventListener('gamepadconnected',e=>{gpIndex=e.gamepad.index;unlock();gp.classList.add('on');setTimeout(()=>gp.classList.remove('on'),2200)});
-makeSkull();preload();requestAnimationFrame(menuInput);
-</script></body></html>
+<title>BOS THROWDOWN</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= LOADING ================= -->
+<div id="loadingScreen" class="screen active">
+  <div class="loading-title">BOS THROWDOWN</div>
+  <div class="loading-bar-track"><div id="loadingBarFill" class="loading-bar-fill"></div></div>
+  <div id="loadingPct" class="loading-pct">0%</div>
+  <div id="loadingSub" class="loading-sub">LOADING THE LOT...</div>
+  <div id="loadFailBox" class="load-fail-box hidden">
+    <div class="load-fail-title">MISSING / UNREADABLE FILES</div>
+    <div id="loadFailList" class="load-fail-list"></div>
+    <button id="loadAnywayBtn" class="focusable confirm-btn">CONTINUE ANYWAY</button>
+  </div>
+</div>
+
+<!-- ================= TITLE ================= -->
+<div id="titleScreen" class="screen">
+  <div class="scanlines"></div><div class="vignette"></div>
+  <canvas id="skullCanvas" class="skull-canvas" width="132" height="132"></canvas>
+  <div class="title-logo">BOS<span class="title-sub">THROWDOWN</span></div>
+  <div class="title-crew">NINE DEEP &middot; ONE LEADER &middot; BROTHERS OF SHADOW</div>
+  <div class="title-prompt">TAP, CLICK, OR PRESS CROSS</div>
+  <div id="metaProgress" class="meta-progress"></div>
+  <div id="tapGateOverlay" class="tap-gate-overlay">TAP OR PUNCH THE SCREEN<br>TO FIGHT</div>
+</div>
+
+<!-- ================= SELECT ================= -->
+<div id="selectScreen" class="screen">
+  <div class="scanlines"></div><div class="vignette"></div>
+  <h2 class="section-title">SELECT YOUR FIGHTER</h2>
+  <div class="select-hint">D-PAD / STICK TO MOVE &middot; CROSS TO CONFIRM</div>
+  <div id="rosterGrid" class="roster-grid"></div>
+  <div id="statPanel" class="stat-panel hidden">
+    <div id="statName" class="stat-name"></div>
+    <div class="stat-row"><span>HP</span><div class="stat-bar"><div id="statHp" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>SPEED</span><div class="stat-bar"><div id="statSpeed" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>REACH</span><div class="stat-bar"><div id="statReach" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>LIGHT</span><div class="stat-bar"><div id="statLight" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>HEAVY</span><div class="stat-bar"><div id="statHeavy" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>AGGRO</span><div class="stat-bar"><div id="statAi" class="stat-bar-fill"></div></div></div>
+    <div id="statWeapon" class="stat-weapon"></div>
+    <button id="confirmBtn" class="focusable confirm-btn">CONFIRM FIGHTER</button>
+  </div>
+</div>
+
+<!-- ================= CUTSCENE ================= -->
+<div id="cutsceneScreen" class="screen">
+  <button id="skipBtn" class="focusable skip-btn">SKIP</button>
+  <div id="cutsceneCardA" class="cutscene-card-a"></div>
+  <div id="cutsceneCardB" class="cutscene-card-b"></div>
+  <div class="cutscene-bar-track"><div id="cutsceneBarFill" class="cutscene-bar-fill"></div></div>
+</div>
+
+<!-- ================= VS ================= -->
+<div id="vsScreen" class="screen">
+  <div class="scanlines"></div><div class="vignette"></div>
+  <div class="vs-portraits">
+    <div class="vs-side">
+      <img id="vsPlayerImg" class="vs-portrait" alt="">
+      <div id="vsPlayerName" class="vs-name"></div>
+    </div>
+    <div class="vs-text">VS</div>
+    <div class="vs-side">
+      <img id="vsOpponentImg" class="vs-portrait" alt="">
+      <div id="vsOpponentName" class="vs-name"></div>
+    </div>
+  </div>
+  <div id="vsRung" class="vs-rung"></div>
+  <div id="vsTaunt" class="vs-taunt"></div>
+  <button id="vsBeginBtn" class="focusable confirm-btn vs-begin">CROSS TO BEGIN</button>
+</div>
+
+<!-- ================= FIGHT ================= -->
+<div id="fightScreen" class="screen">
+  <div class="scanlines"></div><div class="vignette"></div>
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+  <div class="hud-top">
+    <div class="hud-hp-block">
+      <div id="hudP1Name" class="hud-name"></div>
+      <div class="hp-bar-track"><div id="hudP1Hp" class="hp-bar-fill p1"></div></div>
+      <div class="pips" id="hudP1Pips"></div>
+      <div class="meter-track"><div id="hudP1Meter" class="meter-fill"></div></div>
+    </div>
+    <div class="hud-center"><div id="hudClock" class="hud-clock">90</div></div>
+    <div class="hud-hp-block right">
+      <div id="hudP2Name" class="hud-name"></div>
+      <div class="hp-bar-track"><div id="hudP2Hp" class="hp-bar-fill p2"></div></div>
+      <div class="pips" id="hudP2Pips"></div>
+      <div class="meter-track"><div id="hudP2Meter" class="meter-fill"></div></div>
+    </div>
+  </div>
+
+  <div id="roundCallout" class="round-callout"></div>
+  <div id="gamepadBadge" class="gamepad-badge">PS4 CONTROLLER CONNECTED</div>
+  <button id="pauseIconBtn" class="pause-icon-btn">II</button>
+  <button id="soundToggleBtn" class="sound-toggle-btn">SOUND: ON</button>
+
+  <div id="pauseMenu" class="pause-menu hidden">
+    <div class="pause-title">PAUSED</div>
+    <div class="pause-sub">THE CROWD IS STILL THERE</div>
+    <button id="resumeBtn" class="focusable pause-btn">RESUME</button>
+    <button id="toTitleBtn" class="focusable pause-btn">BACK TO TITLE</button>
+  </div>
+
+  <div class="touch-controls">
+    <div class="dpad">
+      <button id="btnLeft"  class="dbtn dleft">&#9664;</button>
+      <button id="btnRight" class="dbtn dright">&#9654;</button>
+      <button id="btnUp"    class="dbtn dup">&#9650;</button>
+      <button id="btnDown"  class="dbtn ddown">&#9660;</button>
+    </div>
+    <div class="abtns">
+      <button id="btnBlock"   class="abtn block">BLK</button>
+      <button id="btnPunch"   class="abtn punch">PUN</button>
+      <button id="btnKick"    class="abtn kick">KIC</button>
+      <button id="btnSpecial" class="abtn special">SPC</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= WIN ================= -->
+<div id="winScreen" class="screen">
+  <div class="scanlines"></div><div class="vignette"></div>
+  <img id="winPortrait" class="win-portrait" alt="">
+  <div id="winTitle" class="win-title"></div>
+  <div id="winSub" class="win-sub"></div>
+  <div id="winTaunt" class="win-taunt"></div>
+  <button id="continueBtn" class="focusable continue-btn">CONTINUE</button>
+</div>
+
+<script src="roster.js"></script>
+<script src="engine.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
