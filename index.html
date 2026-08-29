@@ -10,7 +10,7 @@
 </head>
 <body>
 
-<!-- ================= LOADING ================= -->
+<!-- ============ LOADING ============ -->
 <div id="loadingScreen" class="screen active">
   <div class="loading-title">BOS THROWDOWN</div>
   <div class="loading-bar-track"><div id="loadingBarFill" class="loading-bar-fill"></div></div>
@@ -23,7 +23,7 @@
   </div>
 </div>
 
-<!-- ================= TITLE ================= -->
+<!-- ============ TITLE ============ -->
 <div id="titleScreen" class="screen">
   <div class="scanlines"></div><div class="vignette"></div>
   <canvas id="skullCanvas" class="skull-canvas" width="132" height="132"></canvas>
@@ -34,7 +34,7 @@
   <div id="tapGateOverlay" class="tap-gate-overlay">TAP OR PUNCH THE SCREEN<br>TO FIGHT</div>
 </div>
 
-<!-- ================= SELECT ================= -->
+<!-- ============ SELECT ============ -->
 <div id="selectScreen" class="screen">
   <div class="scanlines"></div><div class="vignette"></div>
   <h2 class="section-title">SELECT YOUR FIGHTER</h2>
@@ -53,15 +53,19 @@
   </div>
 </div>
 
-<!-- ================= CUTSCENE ================= -->
+<!-- ============ CUTSCENE (16:9 STAGE) ============ -->
 <div id="cutsceneScreen" class="screen">
-  <button id="skipBtn" class="focusable skip-btn">SKIP</button>
-  <div id="cutsceneCardA" class="cutscene-card-a"></div>
-  <div id="cutsceneCardB" class="cutscene-card-b"></div>
-  <div class="cutscene-bar-track"><div id="cutsceneBarFill" class="cutscene-bar-fill"></div></div>
+  <div id="cutsceneStage" class="stage-16x9">
+    <button id="skipBtn" class="focusable skip-btn">SKIP</button>
+    <div class="cutscene-inner">
+      <div id="cutsceneCardA" class="cutscene-card-a"></div>
+      <div id="cutsceneCardB" class="cutscene-card-b"></div>
+    </div>
+    <div class="cutscene-bar-track"><div id="cutsceneBarFill" class="cutscene-bar-fill"></div></div>
+  </div>
 </div>
 
-<!-- ================= VS ================= -->
+<!-- ============ VS ============ -->
 <div id="vsScreen" class="screen">
   <div class="scanlines"></div><div class="vignette"></div>
   <div class="vs-portraits">
@@ -80,56 +84,58 @@
   <button id="vsBeginBtn" class="focusable confirm-btn vs-begin">CROSS TO BEGIN</button>
 </div>
 
-<!-- ================= FIGHT ================= -->
+<!-- ============ FIGHT (16:9 STAGE) ============ -->
 <div id="fightScreen" class="screen">
-  <div class="scanlines"></div><div class="vignette"></div>
-  <canvas id="gameCanvas" width="960" height="540"></canvas>
+  <div id="fightStage" class="stage-16x9">
+    <div class="scanlines"></div><div class="vignette"></div>
+    <canvas id="gameCanvas" width="960" height="540"></canvas>
 
-  <div class="hud-top">
-    <div class="hud-hp-block">
-      <div id="hudP1Name" class="hud-name"></div>
-      <div class="hp-bar-track"><div id="hudP1Hp" class="hp-bar-fill p1"></div></div>
-      <div class="pips" id="hudP1Pips"></div>
-      <div class="meter-track"><div id="hudP1Meter" class="meter-fill"></div></div>
+    <div class="hud-top">
+      <div class="hud-hp-block">
+        <div id="hudP1Name" class="hud-name"></div>
+        <div class="hp-bar-track"><div id="hudP1Hp" class="hp-bar-fill p1"></div></div>
+        <div class="pips" id="hudP1Pips"></div>
+        <div class="meter-track"><div id="hudP1Meter" class="meter-fill"></div></div>
+      </div>
+      <div class="hud-center"><div id="hudClock" class="hud-clock">90</div></div>
+      <div class="hud-hp-block right">
+        <div id="hudP2Name" class="hud-name"></div>
+        <div class="hp-bar-track"><div id="hudP2Hp" class="hp-bar-fill p2"></div></div>
+        <div class="pips" id="hudP2Pips"></div>
+        <div class="meter-track"><div id="hudP2Meter" class="meter-fill"></div></div>
+      </div>
     </div>
-    <div class="hud-center"><div id="hudClock" class="hud-clock">90</div></div>
-    <div class="hud-hp-block right">
-      <div id="hudP2Name" class="hud-name"></div>
-      <div class="hp-bar-track"><div id="hudP2Hp" class="hp-bar-fill p2"></div></div>
-      <div class="pips" id="hudP2Pips"></div>
-      <div class="meter-track"><div id="hudP2Meter" class="meter-fill"></div></div>
+
+    <div id="roundCallout" class="round-callout"></div>
+    <div id="gamepadBadge" class="gamepad-badge">PS4 CONTROLLER CONNECTED</div>
+    <button id="pauseIconBtn" class="pause-icon-btn">II</button>
+    <button id="soundToggleBtn" class="sound-toggle-btn">SOUND: ON</button>
+
+    <div id="pauseMenu" class="pause-menu hidden">
+      <div class="pause-title">PAUSED</div>
+      <div class="pause-sub">THE CROWD IS STILL THERE</div>
+      <button id="resumeBtn" class="focusable pause-btn">RESUME</button>
+      <button id="toTitleBtn" class="focusable pause-btn">BACK TO TITLE</button>
     </div>
-  </div>
 
-  <div id="roundCallout" class="round-callout"></div>
-  <div id="gamepadBadge" class="gamepad-badge">PS4 CONTROLLER CONNECTED</div>
-  <button id="pauseIconBtn" class="pause-icon-btn">II</button>
-  <button id="soundToggleBtn" class="sound-toggle-btn">SOUND: ON</button>
-
-  <div id="pauseMenu" class="pause-menu hidden">
-    <div class="pause-title">PAUSED</div>
-    <div class="pause-sub">THE CROWD IS STILL THERE</div>
-    <button id="resumeBtn" class="focusable pause-btn">RESUME</button>
-    <button id="toTitleBtn" class="focusable pause-btn">BACK TO TITLE</button>
-  </div>
-
-  <div class="touch-controls">
-    <div class="dpad">
-      <button id="btnLeft"  class="dbtn dleft">&#9664;</button>
-      <button id="btnRight" class="dbtn dright">&#9654;</button>
-      <button id="btnUp"    class="dbtn dup">&#9650;</button>
-      <button id="btnDown"  class="dbtn ddown">&#9660;</button>
-    </div>
-    <div class="abtns">
-      <button id="btnBlock"   class="abtn block">BLK</button>
-      <button id="btnPunch"   class="abtn punch">PUN</button>
-      <button id="btnKick"    class="abtn kick">KIC</button>
-      <button id="btnSpecial" class="abtn special">SPC</button>
+    <div class="touch-controls">
+      <div class="dpad">
+        <button id="btnLeft"  class="dbtn dleft">&#9664;</button>
+        <button id="btnRight" class="dbtn dright">&#9654;</button>
+        <button id="btnUp"    class="dbtn dup">&#9650;</button>
+        <button id="btnDown"  class="dbtn ddown">&#9660;</button>
+      </div>
+      <div class="abtns">
+        <button id="btnBlock"   class="abtn block">BLK</button>
+        <button id="btnPunch"   class="abtn punch">PUN</button>
+        <button id="btnKick"    class="abtn kick">KIC</button>
+        <button id="btnSpecial" class="abtn special">SPC</button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ================= WIN ================= -->
+<!-- ============ WIN ============ -->
 <div id="winScreen" class="screen">
   <div class="scanlines"></div><div class="vignette"></div>
   <img id="winPortrait" class="win-portrait" alt="">

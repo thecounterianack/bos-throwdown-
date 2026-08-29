@@ -1,10 +1,34 @@
 'use strict';
 
+/* ==================== 16:9 STAGE FITTING ====================
+   Applied to BOTH #fightStage and #cutsceneStage. Computes the
+   largest 16:9 box that fits the viewport and sets it as an
+   explicit inline pixel size, so mobile browsers never squish
+   the canvas into a top sliver or leave HUD/controls floating
+   over empty space. Runs on load, resize, and orientation change.
+================================================================= */
+function fitStage(el){
+  if (!el) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let w = vw, h = w * 9 / 16;
+  if (h > vh){ h = vh; w = h * 16 / 9; }
+  el.style.width = Math.round(w) + 'px';
+  el.style.height = Math.round(h) + 'px';
+}
+function fitAllStages(){
+  fitStage(document.getElementById('fightStage'));
+  fitStage(document.getElementById('cutsceneStage'));
+}
+window.addEventListener('resize', fitAllStages);
+window.addEventListener('orientationchange', () => setTimeout(fitAllStages, 60));
+window.addEventListener('load', fitAllStages);
+document.addEventListener('DOMContentLoaded', fitAllStages);
+
 /* ============================================================
-   BOS THROWDOWN - ENGINE
-   Asset paths, background keying, audio unlock, input,
-   fighter class and skeleton rig.
-   ============================================================ */
+BOS THROWDOWN - ENGINE
+Asset paths, background keying, audio unlock, input,
+fighter class and skeleton rig.
+============================================================ */
 
 /* ==================== CONSTANTS ==================== */
 const CANVAS_W = 960, CANVAS_H = 540;
@@ -40,19 +64,15 @@ const Progress = {
   get difficultyMult(){ return Math.min(1 + this.towerClears * 0.05, 1.6); }
 };
 
-/* ==================== ASSET PATHS ====================
-   THE BUG: old code produced "assetstmoneyfront.jpeg" with no
-   slash and no underscore. No image ever resolved, so every
-   fighter fell back to a maroon rectangle.
-====================================================== */
+/* ==================== ASSET PATHS ==================== */
 function imgPath(artId, pose){ return 'assets/' + artId + '_' + pose + '.jpeg'; }
 function audioPath(name){ return 'audio/' + name; }
 
 /* ==================== BACKGROUND REMOVAL ====================
-   Border flood-fill. Only white CONNECTED TO THE OUTER EDGE is
-   erased, so a white shirt or white sneakers in the middle of a
-   body survive. Saturation guard means red/blue clothing is
-   never touched. Runs once per image at load, cached to canvas.
+Border flood-fill. Only white CONNECTED TO THE OUTER EDGE is
+erased, so a white shirt or white sneakers in the middle of a
+body survive. Saturation guard means red/blue clothing is
+never touched. Runs once per image at load, cached to canvas.
 ============================================================= */
 const Assets = {};
 const loadFailures = [];
@@ -68,7 +88,7 @@ function keyOutBackground(img){
 
   let data;
   try { data = cx.getImageData(0, 0, w, h); }
-  catch(e){ return img; }   // tainted canvas on file:// -> raw image fallback
+  catch(e){ return img; } // tainted canvas on file:// -> raw image fallback
 
   const px = data.data;
   const seen = new Uint8Array(w * h);
@@ -150,7 +170,7 @@ function loadAudioAsset(name){
     a.addEventListener('canplay', () => done(true));
     a.addEventListener('loadedmetadata', () => { if (a.duration > 0) done(true); });
     a.addEventListener('error', () => done(false));
-    setTimeout(() => done(a.readyState >= 1), 20000);   // 14MB song1 hang guard
+    setTimeout(() => done(a.readyState >= 1), 20000); // 14MB song1 hang guard
     a.src = path;
     a.load();
   });
@@ -193,7 +213,7 @@ function playMusic(name, fromTime){
   if (currentTrack) currentTrack.pause();
   const a = AudioAssets[name] || new Audio(audioPath(name));
   AudioAssets[name] = a;
-  a.loop = (name !== 'song1.mp3');   // the Jung intro must not loop
+  a.loop = (name !== 'song1.mp3'); // the Jung intro must not loop
   a.volume = 0.55;
   if (typeof fromTime === 'number'){ try { a.currentTime = fromTime; } catch(e){} }
   currentTrack = a;
@@ -201,6 +221,7 @@ function playMusic(name, fromTime){
   if (musicEnabled) a.play().catch(()=>{});
   return a;
 }
+
 function pauseMusic(){ if (currentTrack) currentTrack.pause(); }
 function resumeMusic(){ if (currentTrack && musicEnabled) currentTrack.play().catch(()=>{}); }
 function setMusicEnabled(v){
@@ -277,8 +298,8 @@ function showGamepadBadge(){
 }
 
 /* DS4 standard mapping:
-   0=Cross 1=Circle 2=Square 3=Triangle 4=L1 5=R1
-   8=Share 9=Options 12/13/14/15 = dpad Up/Down/Left/Right   */
+0=Cross 1=Circle 2=Square 3=Triangle 4=L1 5=R1
+8=Share 9=Options 12/13/14/15 = dpad Up/Down/Left/Right */
 function pollGamepad(){
   if (gamepadIndex === null) return;
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -288,17 +309,17 @@ function pollGamepad(){
   const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
   const b = i => gp.buttons[i] && gp.buttons[i].pressed;
 
-  Input.left    = !!heldKeys.left    || ax < -0.35 || b(14);
-  Input.right   = !!heldKeys.right   || ax >  0.35 || b(15);
-  Input.up      = !!heldKeys.up      || ay < -0.50 || b(12);
-  Input.down    = !!heldKeys.down    || ay >  0.50 || b(13);
-  Input.punch   = !!heldKeys.punch   || b(0);
-  Input.kick    = !!heldKeys.kick    || b(2);
+  Input.left = !!heldKeys.left || ax < -0.35 || b(14);
+  Input.right = !!heldKeys.right || ax > 0.35 || b(15);
+  Input.up = !!heldKeys.up || ay < -0.50 || b(12);
+  Input.down = !!heldKeys.down || ay > 0.50 || b(13);
+  Input.punch = !!heldKeys.punch || b(0);
+  Input.kick = !!heldKeys.kick || b(2);
   Input.special = !!heldKeys.special || b(3);
-  Input.block   = !!heldKeys.block   || b(1) || b(4) || b(5);
-  Input.pause   = !!heldKeys.pause   || b(9) || b(8);
+  Input.block = !!heldKeys.block || b(1) || b(4) || b(5);
+  Input.pause = !!heldKeys.pause || b(9) || b(8);
   Input.confirm = !!heldKeys.confirm || b(0);
-  Input.back    = b(1);
+  Input.back = b(1);
 }
 
 function bindTouchButton(elId, action){
@@ -306,15 +327,15 @@ function bindTouchButton(elId, action){
   if (!el) return;
   const set = v => { Input[action] = v; heldKeys[action] = v; };
   el.addEventListener('touchstart', e => { e.preventDefault(); set(true); unlockAudioContext(); }, { passive:false });
-  el.addEventListener('touchend',   e => { e.preventDefault(); set(false); }, { passive:false });
+  el.addEventListener('touchend', e => { e.preventDefault(); set(false); }, { passive:false });
   el.addEventListener('touchcancel', () => set(false));
   el.addEventListener('mousedown', () => { set(true); unlockAudioContext(); });
-  el.addEventListener('mouseup',   () => set(false));
+  el.addEventListener('mouseup', () => set(false));
   el.addEventListener('mouseleave',() => set(false));
 }
 
 /* ==================== FIGHTER + SKELETON RIG ==================== */
-const MOVE_DUR    = { punch:260, kick:340, special:460 };
+const MOVE_DUR = { punch:260, kick:340, special:460 };
 const MOVE_ACTIVE = { punch:120, kick:170, special:230 };
 
 class Fighter {
@@ -359,7 +380,7 @@ class Fighter {
   tryAttack(type, other){
     if (!this.canAct() || this.jumping) return false;
     if (type === 'special'){
-      if (this.meter < this.maxMeter) return false;   // hard gate until full
+      if (this.meter < this.maxMeter) return false; // hard gate until full
       this.meter = 0;
       this.specialGlow = MOVE_DUR.special;
     }
@@ -376,7 +397,7 @@ class Fighter {
     if (this.specialGlow > 0) this.specialGlow -= dt;
 
     if (this.state !== 'ko'){
-      this.addMeter(dt * 0.006);                       // passive charge
+      this.addMeter(dt * 0.006); // passive charge
       if (other) this.facing = (other.x > this.x) ? 1 : -1;
     }
 
@@ -412,13 +433,13 @@ class Fighter {
     if (dist > this.data.reach * rangeMult + 40) return;
 
     let dmg = this.state === 'punch' ? this.data.light
-            : this.state === 'kick'  ? this.data.heavy
-            : Math.round(this.data.heavy * 1.6);
+      : this.state === 'kick' ? this.data.heavy
+      : Math.round(this.data.heavy * 1.6);
 
     this.addMeter(6);
 
     if (other.blocking){
-      dmg = Math.max(1, Math.round(dmg * 0.17));      // chip damage remains
+      dmg = Math.max(1, Math.round(dmg * 0.17)); // chip damage remains
       other.flashTimer = 120;
       other.addMeter(4);
     } else {
@@ -442,36 +463,37 @@ class Fighter {
     const walk = Math.sin(this.walkPhase) * (Math.abs(this.vx) > 0.1 ? 1 : 0);
     const crouch = this.crouching ? 0.22 : 0;
 
-    const hipY  = -h * (0.46 - crouch);
-    const shY   = -h * (0.80 - crouch * 0.7);
+    const hipY = -h * (0.46 - crouch);
+    const shY = -h * (0.80 - crouch * 0.7);
     const headY = -h * (0.92 - crouch * 0.6);
 
-    let armR   = { x:  w * 0.20, y: shY + h * 0.16 };
-    let armL   = { x: -w * 0.20, y: shY + h * 0.16 };
-    let elbowR = { x:  w * 0.16, y: shY + h * 0.08 };
+    let armR = { x: w * 0.20, y: shY + h * 0.16 };
+    let armL = { x: -w * 0.20, y: shY + h * 0.16 };
+    let elbowR = { x: w * 0.16, y: shY + h * 0.08 };
 
     if (st === 'punch'){
-      armR   = { x: w * (0.18 + 0.52 * swing), y: shY + h * 0.06 };
+      armR = { x: w * (0.18 + 0.52 * swing), y: shY + h * 0.06 };
       elbowR = { x: w * (0.14 + 0.26 * swing), y: shY + h * 0.07 };
     } else if (st === 'special'){
-      armR   = { x: w * (0.20 + 0.66 * swing), y: shY + h * (0.04 - 0.10 * swing) };
+      armR = { x: w * (0.20 + 0.66 * swing), y: shY + h * (0.04 - 0.10 * swing) };
       elbowR = { x: w * (0.16 + 0.32 * swing), y: shY + h * 0.05 };
     } else if (st === 'block'){
-      armR   = { x: w * 0.06, y: shY + h * 0.02 };
+      armR = { x: w * 0.06, y: shY + h * 0.02 };
       elbowR = { x: w * 0.14, y: shY + h * 0.10 };
-      armL   = { x: -w * 0.04, y: shY + h * 0.04 };
+      armL = { x: -w * 0.04, y: shY + h * 0.04 };
     } else if (st === 'hitstun'){
-      armR   = { x: w * 0.28, y: shY + h * 0.22 };
+      armR = { x: w * 0.28, y: shY + h * 0.22 };
       elbowR = { x: w * 0.22, y: shY + h * 0.14 };
     }
 
-    let legR  = { x: w * (0.14 + walk * 0.10), y: 0 };
+    let legR = { x: w * (0.14 + walk * 0.10), y: 0 };
     let kneeR = { x: w * 0.13, y: hipY * 0.42 };
     if (st === 'kick'){
-      legR  = { x: w * (0.16 + 0.70 * swing), y: -h * (0.10 + 0.26 * swing) };
+      legR = { x: w * (0.16 + 0.70 * swing), y: -h * (0.10 + 0.26 * swing) };
       kneeR = { x: w * (0.15 + 0.34 * swing), y: hipY * 0.42 - h * 0.06 * swing };
     }
-    const legL  = { x: -w * (0.14 + walk * 0.10), y: 0 };
+
+    const legL = { x: -w * (0.14 + walk * 0.10), y: 0 };
     const kneeL = { x: -w * 0.13, y: hipY * 0.42 };
 
     return { hipY, shY, headY, armR, armL, elbowR, legR, legL, kneeR, kneeL };

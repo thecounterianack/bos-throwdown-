@@ -1,10 +1,10 @@
 'use strict';
 
 /* ============================================================
-   BOS THROWDOWN - GAME
-   Loader, skull, Jung cutscene, screen flow, combat loop,
-   render, tower progression, global controller navigation.
-   ============================================================ */
+BOS THROWDOWN - GAME
+Loader, skull, Jung cutscene, screen flow, combat loop,
+render, tower progression, global controller navigation.
+============================================================ */
 
 /* ==================== ASSET MANIFEST + LOADER ==================== */
 const IMAGE_JOBS = [];
@@ -41,7 +41,7 @@ async function preloadAssets(){
     if (sub) sub.textContent = loadFailures.length + ' FILE(S) FAILED TO LOAD';
     const box = document.getElementById('loadFailBox');
     const list = document.getElementById('loadFailList');
-    list.innerHTML = loadFailures.map(f => '&bull; ' + f).join('<br>');
+    list.innerHTML = loadFailures.map(f => '&bull; ' + f).join('');
     box.classList.remove('hidden');
     document.getElementById('loadAnywayBtn').onclick = goToTitle;
     Nav.refresh();
@@ -55,6 +55,7 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
+  if (typeof fitAllStages === 'function') fitAllStages();
   Nav.idx = 0;
   Nav.refresh();
 }
@@ -66,18 +67,18 @@ function currentScreenId(){
 
 /* ==================== 8-BIT SKULL ==================== */
 const SKULL = [
-  '...######...',
-  '..########..',
-  '.##########.',
-  '############',
-  '##.##..##.##',
-  '##.##..##.##',
-  '############',
-  '############',
-  '.#.######.#.',
-  '..########..',
-  '..#.#..#.#..',
-  '...######...'
+'...######...',
+'..########..',
+'.##########.',
+'############',
+'##.##..##.##',
+'##.##..##.##',
+'############',
+'############',
+'.#.######.#.',
+'..########..',
+'..#.#..#.#..',
+'...######...'
 ];
 let skullCtx = null;
 
@@ -118,8 +119,8 @@ function initTitleMeta(){
   const el = document.getElementById('metaProgress');
   const pct = Math.round((Progress.difficultyMult - 1) * 100);
   el.innerHTML =
-    'TOWER CLEARS: ' + Progress.towerClears +
-    '<br>SHADOW TIER: ' + Progress.shadowUnlockCount + ' / ' + SHADOW_ROSTER.length + ' UNLOCKED' +
+    'TOWER CLEARS: ' + Progress.towerClears + '<br>' +
+    'SHADOW TIER: ' + Progress.shadowUnlockCount + ' / ' + SHADOW_ROSTER.length + ' UNLOCKED' +
     (pct > 0 ? '<br>FIGHTERS ARE ' + pct + '% HARDER' : '');
 }
 
@@ -211,15 +212,16 @@ function selectFighter(id, cellEl){
 
   document.getElementById('statPanel').classList.remove('hidden');
   document.getElementById('statName').textContent = c.name;
-  document.getElementById('statHp').style.width     = Math.min(100, (c.hp / 180) * 100) + '%';
-  document.getElementById('statSpeed').style.width  = Math.min(100, (c.speed / 9) * 100) + '%';
-  document.getElementById('statReach').style.width  = Math.min(100, (c.reach / 90) * 100) + '%';
-  document.getElementById('statLight').style.width  = Math.min(100, (c.light / 13) * 100) + '%';
-  document.getElementById('statHeavy').style.width  = Math.min(100, (c.heavy / 20) * 100) + '%';
-  document.getElementById('statAi').style.width     = Math.min(100, c.ai * 100) + '%';
+  document.getElementById('statHp').style.width = Math.min(100, (c.hp / 180) * 100) + '%';
+  document.getElementById('statSpeed').style.width = Math.min(100, (c.speed / 9) * 100) + '%';
+  document.getElementById('statReach').style.width = Math.min(100, (c.reach / 90) * 100) + '%';
+  document.getElementById('statLight').style.width = Math.min(100, (c.light / 13) * 100) + '%';
+  document.getElementById('statHeavy').style.width = Math.min(100, (c.heavy / 20) * 100) + '%';
+  document.getElementById('statAi').style.width = Math.min(100, c.ai * 100) + '%';
   document.getElementById('statWeapon').textContent = 'SPECIAL WEAPON: ' + String(c.weapon).toUpperCase();
   Nav.refresh();
 }
+
 document.getElementById('confirmBtn').onclick = confirmSelection;
 
 function confirmSelection(){
@@ -234,15 +236,15 @@ function confirmSelection(){
 
 /* ==================== JUNG CUTSCENE (75s, synced to song1) ==================== */
 const INTRO_CARDS = [
-  [0,  'CARL JUNG CALLED IT THE SHADOW.',  'The unknown dark side of the personality. The part of you nobody asked you to approve.'],
-  [11, 'INSTINCTIVE. IRRATIONAL.',         'It takes what you can\u2019t stand about yourself and goes looking for it in somebody else.'],
-  [19, 'THAT\u2019S CALLED PROJECTION.',   'Every fight that ever started in this lot started right there.'],
-  [26, 'A VEIL THAT KEEPS THICKENING.',    'Your ego on one side. The real world on the other. Everybody carries one.'],
-  [35, 'THE LESS YOU LIVE WITH IT,',       'the blacker and denser it gets. Jung wrote that. He never had to prove it in a parking lot.'],
-  [44, 'SO WE DON\u2019T RUN FROM OURS.',  'That is why they call us the BROTHERS OF SHADOW.'],
-  [51, 'WE FIGHT THE DEMON HEAD ON.',      'The demon fights back. It always fights back \u2014 you never get fully rid of it.'],
-  [60, 'EVERYBODY HAS A SHADOW.',          'Accept that and you get accepted in. Nine deep, one leader, and the leader gets decided tonight.'],
-  [68, 'THEY TRY TO SHORTEN MY LIFESPAN.', 'I never wanted the fight. It came my way anyway. So I stand my ground.']
+[0, 'CARL JUNG CALLED IT THE SHADOW.', 'The unknown dark side of the personality. The part of you nobody asked you to approve.'],
+[11, 'INSTINCTIVE. IRRATIONAL.', 'It takes what you can\u2019t stand about yourself and goes looking for it in somebody else.'],
+[19, 'THAT\u2019S CALLED PROJECTION.', 'Every fight that ever started in this lot started right there.'],
+[26, 'A VEIL THAT KEEPS THICKENING.', 'Your ego on one side. The real world on the other. Everybody carries one.'],
+[35, 'THE LESS YOU LIVE WITH IT,', 'the blacker and denser it gets. Jung wrote that. He never had to prove it in a parking lot.'],
+[44, 'SO WE DON\u2019T RUN FROM OURS.', 'That is why they call us the BROTHERS OF SHADOW.'],
+[51, 'WE FIGHT THE DEMON HEAD ON.', 'The demon fights back. It always fights back \u2014 you never get fully rid of it.'],
+[60, 'EVERYBODY HAS A SHADOW.', 'Accept that and you get accepted in. Nine deep, one leader, and the leader gets decided tonight.'],
+[68, 'THEY TRY TO SHORTEN MY LIFESPAN.', 'I never wanted the fight. It came my way anyway. So I stand my ground.']
 ];
 const INTRO_LEN = 75;
 
@@ -273,6 +275,7 @@ function introLoop(){
   for (let i = 0; i < INTRO_CARDS.length; i++){
     if (sec >= INTRO_CARDS[i][0]) ix = i;
   }
+
   if (ix !== introIndex){
     introIndex = ix;
     const a = document.getElementById('cutsceneCardA');
@@ -350,7 +353,7 @@ function startFight(opponentData){
   const playerData = getById(gameState.pickedId);
   const p1 = new Fighter(playerData, 300, 1, false, null);
   const tint = opponentData.mirror ? 'rgba(255,40,40,0.32)'
-             : opponentData.shadow ? 'rgba(180,0,0,0.42)' : null;
+    : opponentData.shadow ? 'rgba(180,0,0,0.42)' : null;
   const p2 = new Fighter(opponentData, 660, -1, true, tint);
 
   match = {
@@ -447,7 +450,8 @@ function handlePlayerInput(p1, p2){
     p1.blocking = false;
     return;
   }
-  if (Input.left)  p1.vx -= p1.data.speed * 0.5;
+
+  if (Input.left) p1.vx -= p1.data.speed * 0.5;
   if (Input.right) p1.vx += p1.data.speed * 0.5;
 
   if (Input.pressed('up') && !p1.jumping){
@@ -459,8 +463,8 @@ function handlePlayerInput(p1, p2){
   if (p1.blocking) p1.setState('block');
   else if (p1.state === 'block') p1.setState('idle');
 
-  if (Input.pressed('punch'))        p1.tryAttack('punch', p2);
-  else if (Input.pressed('kick'))    p1.tryAttack('kick', p2);
+  if (Input.pressed('punch')) p1.tryAttack('punch', p2);
+  else if (Input.pressed('kick')) p1.tryAttack('kick', p2);
   else if (Input.pressed('special')) p1.tryAttack('special', p2);
 }
 
@@ -552,7 +556,7 @@ function drawFighter(f){
   ctx.globalAlpha = baseAlpha * 0.65;
   ctx.beginPath();
   ctx.moveTo(0, r.hipY); ctx.lineTo(r.kneeL.x, r.kneeL.y); ctx.lineTo(r.legL.x, r.legL.y);
-  ctx.moveTo(0, r.shY);  ctx.lineTo(r.armL.x * 0.7, r.armL.y - 10); ctx.lineTo(r.armL.x, r.armL.y);
+  ctx.moveTo(0, r.shY); ctx.lineTo(r.armL.x * 0.7, r.armL.y - 10); ctx.lineTo(r.armL.x, r.armL.y);
   ctx.stroke();
   ctx.globalAlpha = baseAlpha;
 
@@ -580,7 +584,7 @@ function drawFighter(f){
   ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.moveTo(0, r.hipY); ctx.lineTo(r.kneeR.x, r.kneeR.y); ctx.lineTo(r.legR.x, r.legR.y);
-  ctx.moveTo(0, r.shY);  ctx.lineTo(r.elbowR.x, r.elbowR.y); ctx.lineTo(r.armR.x, r.armR.y);
+  ctx.moveTo(0, r.shY); ctx.lineTo(r.elbowR.x, r.elbowR.y); ctx.lineTo(r.armR.x, r.armR.y);
   ctx.stroke();
 
   // hand joint
@@ -619,7 +623,6 @@ function drawWeapon(f, hx, hy, isShadow){
       ctx.strokeStyle = glow; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(78,-46); ctx.stroke();
       break;
-
     case 'scythe':
     case 'bigscythe': {
       const s = weapon === 'bigscythe' ? 1.35 : 1;
@@ -629,46 +632,39 @@ function drawWeapon(f, hx, hy, isShadow){
       ctx.beginPath(); ctx.arc(14,-76*s, 34*s, Math.PI*0.1, Math.PI*1.1); ctx.stroke();
       break;
     }
-
     case 'chainscythe':
       ctx.strokeStyle = 'rgba(42,42,48,0.95)'; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.moveTo(0,12); ctx.lineTo(12,-70); ctx.stroke();
       ctx.strokeStyle = glow; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.arc(12,-70, 30, 0, Math.PI*2); ctx.stroke();
       break;
-
     case 'gun':
       ctx.fillStyle = 'rgba(30,30,30,0.95)';
       ctx.fillRect(0,-8, 44, 11);
       ctx.fillStyle = glow;
       ctx.beginPath(); ctx.arc(52,-3, 13, 0, Math.PI*2); ctx.fill();
       break;
-
     case 'bat':
       ctx.strokeStyle = 'rgba(162,112,60,0.95)'; ctx.lineWidth = 11;
       ctx.beginPath(); ctx.moveTo(0,6); ctx.lineTo(58,-30); ctx.stroke();
       break;
-
     case 'mic':
       ctx.strokeStyle = 'rgba(200,200,200,0.9)'; ctx.lineWidth = 4;
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(40,-22); ctx.stroke();
       ctx.fillStyle = 'rgba(22,22,22,0.95)';
       ctx.beginPath(); ctx.arc(44,-25, 11, 0, Math.PI*2); ctx.fill();
       break;
-
     case 'vape':
       ctx.fillStyle = 'rgba(200,220,255,0.5)';
       for (let i = 0; i < 5; i++){
         ctx.beginPath(); ctx.arc(18 + i*13, -14 - i*9, 11 - i, 0, Math.PI*2); ctx.fill();
       }
       break;
-
     case 'cd':
       ctx.strokeStyle = glow; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(44,-18, 22, 0, Math.PI*2); ctx.stroke();
       ctx.beginPath(); ctx.arc(44,-18, 6, 0, Math.PI*2); ctx.stroke();
       break;
-
     default:
       ctx.strokeStyle = glow; ctx.lineWidth = 7;
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(46,-4); ctx.stroke();
@@ -762,6 +758,7 @@ function togglePause(){
   Nav.idx = 0;
   Nav.refresh();
 }
+
 document.getElementById('pauseIconBtn').onclick = togglePause;
 document.getElementById('resumeBtn').onclick = togglePause;
 document.getElementById('toTitleBtn').onclick = () => {
@@ -787,7 +784,7 @@ bindTouchButton('btnKick','kick');
 bindTouchButton('btnSpecial','special');
 
 /* ==================== GLOBAL CONTROLLER NAVIGATION ====================
-   Runs on EVERY screen, not just during a fight.
+Runs on EVERY screen, not just during a fight.
 ====================================================================== */
 const Nav = {
   items: [],
@@ -843,14 +840,14 @@ function inputLoop(ts){
   else if (!inFight){
     const cols = (screen === 'selectScreen') ? (window.innerWidth >= 700 ? 5 : 3) : 1;
     const movedRight = Input.pressed('right');
-    const movedLeft  = Input.pressed('left');
-    const movedDown  = Input.pressed('down');
-    const movedUp    = Input.pressed('up');
+    const movedLeft = Input.pressed('left');
+    const movedDown = Input.pressed('down');
+    const movedUp = Input.pressed('up');
 
     if (movedRight) Nav.move(1);
-    if (movedLeft)  Nav.move(-1);
-    if (movedDown)  Nav.move(cols);
-    if (movedUp)    Nav.move(-cols);
+    if (movedLeft) Nav.move(-1);
+    if (movedDown) Nav.move(cols);
+    if (movedUp) Nav.move(-cols);
     if (Input.pressed('confirm') || Input.pressed('punch')) Nav.activate();
 
     // roster focus doubles as a live stat preview
@@ -860,7 +857,6 @@ function inputLoop(ts){
         selectFighter(el.dataset.fid, el);
       }
     }
-
     if (Input.pressed('pause') && screen === 'fightScreen') togglePause();
   }
   else {
