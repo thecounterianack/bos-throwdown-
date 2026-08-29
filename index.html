@@ -1,17 +1,20 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>BOS THROWDOWN</title>
+<title>BOS: THROWDOWN</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ============ LOADING ============ -->
-<div id="loadingScreen" class="screen active">
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- ==================== LOADING ==================== -->
+<section id="loadingScreen" class="screen active">
   <div class="loading-title">BOS THROWDOWN</div>
   <div class="loading-bar-track"><div id="loadingBarFill" class="loading-bar-fill"></div></div>
   <div id="loadingPct" class="loading-pct">0%</div>
@@ -19,25 +22,23 @@
   <div id="loadFailBox" class="load-fail-box hidden">
     <div class="load-fail-title">MISSING / UNREADABLE FILES</div>
     <div id="loadFailList" class="load-fail-list"></div>
-    <button id="loadAnywayBtn" class="focusable confirm-btn">CONTINUE ANYWAY</button>
+    <button id="loadAnywayBtn" class="confirm-btn focusable">CONTINUE ANYWAY</button>
   </div>
-</div>
+</section>
 
-<!-- ============ TITLE ============ -->
-<div id="titleScreen" class="screen">
-  <div class="scanlines"></div><div class="vignette"></div>
-  <canvas id="skullCanvas" class="skull-canvas" width="132" height="132"></canvas>
+<!-- ==================== TITLE ==================== -->
+<section id="titleScreen" class="screen">
+  <canvas id="skullCanvas" class="skull-canvas" width="52" height="48"></canvas>
   <div class="title-logo">BOS<span class="title-sub">THROWDOWN</span></div>
   <div class="title-crew">NINE DEEP &middot; ONE LEADER &middot; BROTHERS OF SHADOW</div>
   <div class="title-prompt">TAP, CLICK, OR PRESS CROSS</div>
   <div id="metaProgress" class="meta-progress"></div>
   <div id="tapGateOverlay" class="tap-gate-overlay">TAP OR PUNCH THE SCREEN<br>TO FIGHT</div>
-</div>
+</section>
 
-<!-- ============ SELECT ============ -->
-<div id="selectScreen" class="screen">
-  <div class="scanlines"></div><div class="vignette"></div>
-  <h2 class="section-title">SELECT YOUR FIGHTER</h2>
+<!-- ==================== SELECT ==================== -->
+<section id="selectScreen" class="screen">
+  <div class="section-title">SELECT YOUR FIGHTER</div>
   <div class="select-hint">D-PAD / STICK TO MOVE &middot; CROSS TO CONFIRM</div>
   <div id="rosterGrid" class="roster-grid"></div>
   <div id="statPanel" class="stat-panel hidden">
@@ -49,25 +50,24 @@
     <div class="stat-row"><span>HEAVY</span><div class="stat-bar"><div id="statHeavy" class="stat-bar-fill"></div></div></div>
     <div class="stat-row"><span>AGGRO</span><div class="stat-bar"><div id="statAi" class="stat-bar-fill"></div></div></div>
     <div id="statWeapon" class="stat-weapon"></div>
-    <button id="confirmBtn" class="focusable confirm-btn">CONFIRM FIGHTER</button>
+    <button id="confirmBtn" class="confirm-btn focusable">CONFIRM FIGHTER</button>
   </div>
-</div>
+</section>
 
-<!-- ============ CUTSCENE (16:9 STAGE) ============ -->
-<div id="cutsceneScreen" class="screen">
+<!-- ==================== CUTSCENE ==================== -->
+<section id="cutsceneScreen" class="screen">
+  <button id="skipBtn" class="skip-btn focusable">SKIP</button>
   <div id="cutsceneStage" class="stage-16x9">
-    <button id="skipBtn" class="focusable skip-btn">SKIP</button>
     <div class="cutscene-inner">
       <div id="cutsceneCardA" class="cutscene-card-a"></div>
       <div id="cutsceneCardB" class="cutscene-card-b"></div>
     </div>
     <div class="cutscene-bar-track"><div id="cutsceneBarFill" class="cutscene-bar-fill"></div></div>
   </div>
-</div>
+</section>
 
-<!-- ============ VS ============ -->
-<div id="vsScreen" class="screen">
-  <div class="scanlines"></div><div class="vignette"></div>
+<!-- ==================== VS ==================== -->
+<section id="vsScreen" class="screen">
   <div class="vs-portraits">
     <div class="vs-side">
       <img id="vsPlayerImg" class="vs-portrait" alt="">
@@ -81,72 +81,73 @@
   </div>
   <div id="vsRung" class="vs-rung"></div>
   <div id="vsTaunt" class="vs-taunt"></div>
-  <button id="vsBeginBtn" class="focusable confirm-btn vs-begin">CROSS TO BEGIN</button>
-</div>
+  <button id="vsBeginBtn" class="confirm-btn vs-begin focusable">CROSS TO BEGIN</button>
+</section>
 
-<!-- ============ FIGHT (16:9 STAGE) ============ -->
-<div id="fightScreen" class="screen">
+<!-- ==================== FIGHT ==================== -->
+<section id="fightScreen" class="screen">
   <div id="fightStage" class="stage-16x9">
-    <div class="scanlines"></div><div class="vignette"></div>
     <canvas id="gameCanvas" width="960" height="540"></canvas>
 
     <div class="hud-top">
       <div class="hud-hp-block">
         <div id="hudP1Name" class="hud-name"></div>
         <div class="hp-bar-track"><div id="hudP1Hp" class="hp-bar-fill p1"></div></div>
-        <div class="pips" id="hudP1Pips"></div>
+        <div id="hudP1Pips" class="pips"></div>
         <div class="meter-track"><div id="hudP1Meter" class="meter-fill"></div></div>
       </div>
-      <div class="hud-center"><div id="hudClock" class="hud-clock">90</div></div>
+      <div class="hud-center">
+        <div id="hudClock" class="hud-clock">90</div>
+      </div>
       <div class="hud-hp-block right">
         <div id="hudP2Name" class="hud-name"></div>
         <div class="hp-bar-track"><div id="hudP2Hp" class="hp-bar-fill p2"></div></div>
-        <div class="pips" id="hudP2Pips"></div>
+        <div id="hudP2Pips" class="pips"></div>
         <div class="meter-track"><div id="hudP2Meter" class="meter-fill"></div></div>
       </div>
     </div>
 
     <div id="roundCallout" class="round-callout"></div>
     <div id="gamepadBadge" class="gamepad-badge">PS4 CONTROLLER CONNECTED</div>
+
     <button id="pauseIconBtn" class="pause-icon-btn">II</button>
     <button id="soundToggleBtn" class="sound-toggle-btn">SOUND: ON</button>
 
     <div id="pauseMenu" class="pause-menu hidden">
       <div class="pause-title">PAUSED</div>
       <div class="pause-sub">THE CROWD IS STILL THERE</div>
-      <button id="resumeBtn" class="focusable pause-btn">RESUME</button>
-      <button id="toTitleBtn" class="focusable pause-btn">BACK TO TITLE</button>
+      <button id="resumeBtn" class="pause-btn focusable">RESUME</button>
+      <button id="toTitleBtn" class="pause-btn focusable">BACK TO TITLE</button>
     </div>
 
     <div class="touch-controls">
       <div class="dpad">
-        <button id="btnLeft"  class="dbtn dleft">&#9664;</button>
-        <button id="btnRight" class="dbtn dright">&#9654;</button>
-        <button id="btnUp"    class="dbtn dup">&#9650;</button>
-        <button id="btnDown"  class="dbtn ddown">&#9660;</button>
+        <button id="btnLeft" class="dbtn dleft">◀</button>
+        <button id="btnRight" class="dbtn dright">▶</button>
+        <button id="btnUp" class="dbtn dup">▲</button>
+        <button id="btnDown" class="dbtn ddown">▼</button>
       </div>
       <div class="abtns">
-        <button id="btnBlock"   class="abtn block">BLK</button>
-        <button id="btnPunch"   class="abtn punch">PUN</button>
-        <button id="btnKick"    class="abtn kick">KIC</button>
+        <button id="btnBlock" class="abtn block">BLK</button>
+        <button id="btnPunch" class="abtn">PUN</button>
+        <button id="btnKick" class="abtn">KIC</button>
         <button id="btnSpecial" class="abtn special">SPC</button>
       </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- ============ WIN ============ -->
-<div id="winScreen" class="screen">
-  <div class="scanlines"></div><div class="vignette"></div>
+<!-- ==================== WIN ==================== -->
+<section id="winScreen" class="screen">
   <img id="winPortrait" class="win-portrait" alt="">
   <div id="winTitle" class="win-title"></div>
   <div id="winSub" class="win-sub"></div>
   <div id="winTaunt" class="win-taunt"></div>
-  <button id="continueBtn" class="focusable continue-btn">CONTINUE</button>
-</div>
+  <button id="continueBtn" class="continue-btn confirm-btn focusable">CONTINUE</button>
+</section>
 
-<script src="roster.js"></script>
 <script src="engine.js"></script>
+<script src="roster.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

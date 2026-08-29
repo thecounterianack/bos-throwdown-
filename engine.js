@@ -1,12 +1,6 @@
 'use strict';
 
-/* ==================== 16:9 STAGE FITTING ====================
-   Applied to BOTH #fightStage and #cutsceneStage. Computes the
-   largest 16:9 box that fits the viewport and sets it as an
-   explicit inline pixel size, so mobile browsers never squish
-   the canvas into a top sliver or leave HUD/controls floating
-   over empty space. Runs on load, resize, and orientation change.
-================================================================= */
+/* ==================== 16:9 STAGE FITTING ==================== */
 function fitStage(el){
   if (!el) return;
   const vw = window.innerWidth, vh = window.innerHeight;
@@ -23,12 +17,6 @@ window.addEventListener('resize', fitAllStages);
 window.addEventListener('orientationchange', () => setTimeout(fitAllStages, 60));
 window.addEventListener('load', fitAllStages);
 document.addEventListener('DOMContentLoaded', fitAllStages);
-
-/* ============================================================
-BOS THROWDOWN - ENGINE
-Asset paths, background keying, audio unlock, input,
-fighter class and skeleton rig.
-============================================================ */
 
 /* ==================== CONSTANTS ==================== */
 const CANVAS_W = 960, CANVAS_H = 540;
@@ -68,12 +56,7 @@ const Progress = {
 function imgPath(artId, pose){ return 'assets/' + artId + '_' + pose + '.jpeg'; }
 function audioPath(name){ return 'audio/' + name; }
 
-/* ==================== BACKGROUND REMOVAL ====================
-Border flood-fill. Only white CONNECTED TO THE OUTER EDGE is
-erased, so a white shirt or white sneakers in the middle of a
-body survive. Saturation guard means red/blue clothing is
-never touched. Runs once per image at load, cached to canvas.
-============================================================= */
+/* ==================== BACKGROUND REMOVAL ==================== */
 const Assets = {};
 const loadFailures = [];
 
@@ -88,7 +71,7 @@ function keyOutBackground(img){
 
   let data;
   try { data = cx.getImageData(0, 0, w, h); }
-  catch(e){ return img; } // tainted canvas on file:// -> raw image fallback
+  catch(e){ return img; }
 
   const px = data.data;
   const seen = new Uint8Array(w * h);
@@ -119,7 +102,6 @@ function keyOutBackground(img){
     pushIf(x + 1, y); pushIf(x - 1, y); pushIf(x, y + 1); pushIf(x, y - 1);
   }
 
-  // soften the 1px JPEG compression fringe
   for (let y = 1; y < h - 1; y++){
     for (let x = 1; x < w - 1; x++){
       const p = (y * w + x) * 4;
@@ -170,14 +152,20 @@ function loadAudioAsset(name){
     a.addEventListener('canplay', () => done(true));
     a.addEventListener('loadedmetadata', () => { if (a.duration > 0) done(true); });
     a.addEventListener('error', () => done(false));
-    setTimeout(() => done(a.readyState >= 1), 20000); // 14MB song1 hang guard
+    setTimeout(() => done(a.readyState >= 1), 20000);
     a.src = path;
     a.load();
   });
 }
 
+/* getArt now ALWAYS resolves to something drawable (falls back to
+   _front, then to ANY loaded pose for that fighter) so a missing
+   photo can never throw mid-frame and freeze the render loop. */
 function getArt(artId, pose){
-  return Assets[artId + '_' + pose] || Assets[artId + '_front'] || null;
+  if (Assets[artId + '_' + pose]) return Assets[artId + '_' + pose];
+  if (Assets[artId + '_front']) return Assets[artId + '_front'];
+  const anyKey = Object.keys(Assets).find(k => k.indexOf(artId + '_') === 0);
+  return anyKey ? Assets[anyKey] : null;
 }
 
 /* ==================== AUDIO ==================== */
@@ -213,7 +201,7 @@ function playMusic(name, fromTime){
   if (currentTrack) currentTrack.pause();
   const a = AudioAssets[name] || new Audio(audioPath(name));
   AudioAssets[name] = a;
-  a.loop = (name !== 'song1.mp3'); // the Jung intro must not loop
+  a.loop = (name !== 'song1.mp3');
   a.volume = 0.55;
   if (typeof fromTime === 'number'){ try { a.currentTime = fromTime; } catch(e){} }
   currentTrack = a;
@@ -221,7 +209,6 @@ function playMusic(name, fromTime){
   if (musicEnabled) a.play().catch(()=>{});
   return a;
 }
-
 function pauseMusic(){ if (currentTrack) currentTrack.pause(); }
 function resumeMusic(){ if (currentTrack && musicEnabled) currentTrack.play().catch(()=>{}); }
 function setMusicEnabled(v){
@@ -297,9 +284,6 @@ function showGamepadBadge(){
   setTimeout(() => badge.classList.remove('show'), 2400);
 }
 
-/* DS4 standard mapping:
-0=Cross 1=Circle 2=Square 3=Triangle 4=L1 5=R1
-8=Share 9=Options 12/13/14/15 = dpad Up/Down/Left/Right */
 function pollGamepad(){
   if (gamepadIndex === null) return;
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -380,7 +364,7 @@ class Fighter {
   tryAttack(type, other){
     if (!this.canAct() || this.jumping) return false;
     if (type === 'special'){
-      if (this.meter < this.maxMeter) return false; // hard gate until full
+      if (this.meter < this.maxMeter) return false;
       this.meter = 0;
       this.specialGlow = MOVE_DUR.special;
     }
@@ -397,7 +381,7 @@ class Fighter {
     if (this.specialGlow > 0) this.specialGlow -= dt;
 
     if (this.state !== 'ko'){
-      this.addMeter(dt * 0.006); // passive charge
+      this.addMeter(dt * 0.006);
       if (other) this.facing = (other.x > this.x) ? 1 : -1;
     }
 
@@ -439,7 +423,7 @@ class Fighter {
     this.addMeter(6);
 
     if (other.blocking){
-      dmg = Math.max(1, Math.round(dmg * 0.17)); // chip damage remains
+      dmg = Math.max(1, Math.round(dmg * 0.17));
       other.flashTimer = 120;
       other.addMeter(4);
     } else {
@@ -454,7 +438,6 @@ class Fighter {
     if (other.hp <= 0) other.setState('ko');
   }
 
-  /* joint positions in local space, animated per state */
   rig(){
     const h = this.height, w = this.width;
     const st = this.state;

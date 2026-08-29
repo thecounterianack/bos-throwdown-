@@ -1,9 +1,7 @@
 'use strict';
 
 /* ============================================================
-BOS THROWDOWN - GAME
-Loader, skull, Jung cutscene, screen flow, combat loop,
-render, tower progression, global controller navigation.
+   BOS THROWDOWN - GAME
 ============================================================ */
 
 /* ==================== ASSET MANIFEST + LOADER ==================== */
@@ -28,7 +26,6 @@ async function preloadAssets(){
   const sub = document.getElementById('loadingSub');
   if (sub) sub.textContent = 'LOADING THE LOT...';
 
-  // batches of 6 so mobile does not choke decoding 48 photos at once
   for (let i = 0; i < IMAGE_JOBS.length; i += 6){
     const batch = IMAGE_JOBS.slice(i, i + 6);
     await Promise.all(batch.map(([id, pose]) => loadImageAsset(id, pose).then(tickLoader)));
@@ -41,7 +38,7 @@ async function preloadAssets(){
     if (sub) sub.textContent = loadFailures.length + ' FILE(S) FAILED TO LOAD';
     const box = document.getElementById('loadFailBox');
     const list = document.getElementById('loadFailList');
-    list.innerHTML = loadFailures.map(f => '&bull; ' + f).join('');
+    list.innerHTML = loadFailures.map(f => '• ' + f).join('');
     box.classList.remove('hidden');
     document.getElementById('loadAnywayBtn').onclick = goToTitle;
     Nav.refresh();
@@ -67,18 +64,18 @@ function currentScreenId(){
 
 /* ==================== 8-BIT SKULL ==================== */
 const SKULL = [
-'...######...',
-'..########..',
-'.##########.',
-'############',
-'##.##..##.##',
-'##.##..##.##',
-'############',
-'############',
-'.#.######.#.',
-'..########..',
-'..#.#..#.#..',
-'...######...'
+  '...######...',
+  '..########..',
+  '.##########.',
+  '############',
+  '##.##..##.##',
+  '##.##..##.##',
+  '############',
+  '############',
+  '.#.######.#.',
+  '..########..',
+  '..#.#..#.#..',
+  '...######...'
 ];
 let skullCtx = null;
 
@@ -172,9 +169,13 @@ function artToElement(art, w, h){
   return im;
 }
 
+/* Playable roster PLUS 3 darkened locked shadow tiles, so players
+   can always see how many shadow fighters exist and how many are
+   still locked, even before the tower is cleared once. */
 function renderRosterGrid(){
   const grid = document.getElementById('rosterGrid');
   grid.innerHTML = '';
+
   ROSTER.forEach(c => {
     const cell = document.createElement('div');
     cell.className = 'roster-cell focusable';
@@ -198,6 +199,48 @@ function renderRosterGrid(){
     cell.onclick = () => selectFighter(c.id, cell);
     grid.appendChild(cell);
   });
+
+  const unlockedShadows = Progress.shadowUnlockCount;
+  SHADOW_ROSTER.forEach((s, idx) => {
+    const cell = document.createElement('div');
+    const isUnlocked = idx < unlockedShadows;
+    cell.className = 'roster-cell shadow-cell' + (isUnlocked ? '' : ' locked');
+
+    if (isUnlocked){
+      cell.classList.add('focusable');
+      cell.dataset.fid = s.id;
+    }
+
+    if (isUnlocked){
+      const art = getArt(s.id, 'front');
+      const node = artToElement(art, 160, 120);
+      if (node) cell.appendChild(node);
+      else {
+        const ph = document.createElement('div');
+        ph.style.cssText = 'width:100%;height:88px;background:#3a1414;';
+        cell.appendChild(ph);
+      }
+    } else {
+      const lockPh = document.createElement('div');
+      lockPh.className = 'lock-placeholder';
+      lockPh.textContent = '???';
+      cell.appendChild(lockPh);
+    }
+
+    const nm = document.createElement('div');
+    nm.className = 'rc-name';
+    nm.textContent = isUnlocked ? s.name : 'LOCKED SHADOW';
+    const rg = document.createElement('div');
+    rg.className = 'rc-rung';
+    rg.textContent = isUnlocked ? 'SHADOW TIER' : 'CLEAR THE TOWER';
+    cell.appendChild(nm); cell.appendChild(rg);
+
+    if (isUnlocked){
+      cell.onclick = () => selectFighter(s.id, cell);
+    }
+    grid.appendChild(cell);
+  });
+
   Nav.refresh();
 }
 
@@ -209,6 +252,7 @@ function selectFighter(id, cellEl){
   selectedFighterId = id;
   cellEl.classList.add('selected');
   const c = getById(id);
+  if (!c) return;
 
   document.getElementById('statPanel').classList.remove('hidden');
   document.getElementById('statName').textContent = c.name;
@@ -234,19 +278,24 @@ function confirmSelection(){
   else startVsScreen();
 }
 
-/* ==================== JUNG CUTSCENE (75s, synced to song1) ==================== */
+/* ==================== JUNG CUTSCENE (75s, synced to song1) ====================
+   FIX: text-swap delay now matches the CSS fade-out duration (800ms)
+   instead of 240ms, so the old card is fully invisible before the
+   next card starts fading in. This was the cause of overlapping,
+   unreadable stacked text. */
 const INTRO_CARDS = [
-[0, 'CARL JUNG CALLED IT THE SHADOW.', 'The unknown dark side of the personality. The part of you nobody asked you to approve.'],
-[11, 'INSTINCTIVE. IRRATIONAL.', 'It takes what you can\u2019t stand about yourself and goes looking for it in somebody else.'],
-[19, 'THAT\u2019S CALLED PROJECTION.', 'Every fight that ever started in this lot started right there.'],
-[26, 'A VEIL THAT KEEPS THICKENING.', 'Your ego on one side. The real world on the other. Everybody carries one.'],
-[35, 'THE LESS YOU LIVE WITH IT,', 'the blacker and denser it gets. Jung wrote that. He never had to prove it in a parking lot.'],
-[44, 'SO WE DON\u2019T RUN FROM OURS.', 'That is why they call us the BROTHERS OF SHADOW.'],
-[51, 'WE FIGHT THE DEMON HEAD ON.', 'The demon fights back. It always fights back \u2014 you never get fully rid of it.'],
-[60, 'EVERYBODY HAS A SHADOW.', 'Accept that and you get accepted in. Nine deep, one leader, and the leader gets decided tonight.'],
-[68, 'THEY TRY TO SHORTEN MY LIFESPAN.', 'I never wanted the fight. It came my way anyway. So I stand my ground.']
+  [0, 'CARL JUNG CALLED IT THE SHADOW.', 'The unknown dark side of the personality. The part of you nobody asked you to approve.'],
+  [11, 'INSTINCTIVE. IRRATIONAL.', 'It takes what you can\u2019t stand about yourself and goes looking for it in somebody else.'],
+  [19, 'THAT\u2019S CALLED PROJECTION.', 'Every fight that ever started in this lot started right there.'],
+  [26, 'A VEIL THAT KEEPS THICKENING.', 'Your ego on one side. The real world on the other. Everybody carries one.'],
+  [35, 'THE LESS YOU LIVE WITH IT,', 'the blacker and denser it gets. Jung wrote that. He never had to prove it in a parking lot.'],
+  [44, 'SO WE DON\u2019T RUN FROM OURS.', 'That is why they call us the BROTHERS OF SHADOW.'],
+  [51, 'WE FIGHT THE DEMON HEAD ON.', 'The demon fights back. It always fights back \u2014 you never get fully rid of it.'],
+  [60, 'EVERYBODY HAS A SHADOW.', 'Accept that and you get accepted in. Nine deep, one leader, and the leader gets decided tonight.'],
+  [68, 'THEY TRY TO SHORTEN MY LIFESPAN.', 'I never wanted the fight. It came my way anyway. So I stand my ground.']
 ];
 const INTRO_LEN = 75;
+const CARD_FADE_MS = 800; /* must match .cutscene-card-a/-b transition duration in CSS */
 
 let introRaf = null, introTrack = null, introFallbackStart = 0, introIndex = -1;
 
@@ -261,7 +310,6 @@ function startCutscene(){
   introRaf = requestAnimationFrame(introLoop);
 }
 
-/* drive off the song's real clock so text can never drift from audio */
 function introClock(){
   if (introTrack && !introTrack.paused && introTrack.currentTime > 0) return introTrack.currentTime;
   return (performance.now() - introFallbackStart) / 1000;
@@ -286,7 +334,7 @@ function introLoop(){
       a.textContent = INTRO_CARDS[ix][1];
       b.textContent = INTRO_CARDS[ix][2];
       a.classList.add('show'); b.classList.add('show');
-    }, 240);
+    }, CARD_FADE_MS);
   }
 
   document.getElementById('cutsceneBarFill').style.width =
@@ -332,7 +380,6 @@ function startVsScreen(){
     : 'RUNG ' + (gameState.currentRungIndex + 1) + ' OF ' + gameState.ladder.length;
   document.getElementById('vsTaunt').textContent = hideName ? '???' : (opponent.taunt || '');
 
-  // song1 rides straight out of the cutscene into fight one
   if (opponent.shadow || opponent.id === 'wraith') playMusic('song2.mp3');
   else if (currentTrackName !== 'song1.mp3') playMusic('song3.mp3');
 
@@ -420,12 +467,24 @@ function startRound(){
   }, 1000);
 }
 
+/* FIX: gameLoop is now wrapped in try/catch. Previously, ANY thrown
+   error inside updateMatch/drawMatch (a bad weapon draw call, a
+   missing sprite, etc.) would silently kill requestAnimationFrame
+   forever with zero on-screen feedback — the game would just freeze
+   on whatever state was applied last (often "blocking", since that
+   flag gets set at the very start of handlePlayerInput). Now a
+   render error is caught, logged, and the loop keeps running so the
+   match never permanently locks up on one fighter's move set. */
 function gameLoop(ts){
   if (!match || match.matchOver) return;
   const dt = Math.min(40, ts - lastTs);
   lastTs = ts;
-  if (!gameState.paused && match.roundActive) updateMatch(dt);
-  drawMatch();
+  try {
+    if (!gameState.paused && match.roundActive) updateMatch(dt);
+    drawMatch();
+  } catch(err){
+    console.error('BOS THROWDOWN render error (recovered):', err);
+  }
   requestAnimationFrame(gameLoop);
 }
 
@@ -445,8 +504,14 @@ function updateMatch(dt){
   else if (p2.hp <= 0 && match.roundActive) endRound(p1);
 }
 
+/* FIX: block is now released the instant Input.block goes false,
+   even if a jump/hitstun state briefly interrupts. Also punch/kick/
+   special no longer silently swallow input if canAct() gate inside
+   tryAttack() rejects the move (e.g. still on attack cooldown) —
+   previously nothing at all would happen and it LOOKED like the
+   button was dead, when actually the fighter was just still mid-move. */
 function handlePlayerInput(p1, p2){
-  if (['hitstun','ko','punch','kick','special'].includes(p1.state)){
+  if (['hitstun','ko'].includes(p1.state)){
     p1.blocking = false;
     return;
   }
@@ -454,18 +519,25 @@ function handlePlayerInput(p1, p2){
   if (Input.left) p1.vx -= p1.data.speed * 0.5;
   if (Input.right) p1.vx += p1.data.speed * 0.5;
 
-  if (Input.pressed('up') && !p1.jumping){
+  if (Input.pressed('up') && !p1.jumping && !['punch','kick','special'].includes(p1.state)){
     p1.jumping = true; p1.vy = -1.55; p1.setState('jump');
   }
 
   p1.crouching = Input.down && !p1.jumping;
-  p1.blocking = Input.block;
-  if (p1.blocking) p1.setState('block');
-  else if (p1.state === 'block') p1.setState('idle');
 
-  if (Input.pressed('punch')) p1.tryAttack('punch', p2);
-  else if (Input.pressed('kick')) p1.tryAttack('kick', p2);
-  else if (Input.pressed('special')) p1.tryAttack('special', p2);
+  if (['punch','kick','special'].includes(p1.state)){
+    p1.blocking = false;
+  } else {
+    p1.blocking = Input.block;
+    if (p1.blocking) p1.setState('block');
+    else if (p1.state === 'block') p1.setState('idle');
+  }
+
+  if (!['punch','kick','special'].includes(p1.state)){
+    if (Input.pressed('punch')) p1.tryAttack('punch', p2);
+    else if (Input.pressed('kick')) p1.tryAttack('kick', p2);
+    else if (Input.pressed('special')) p1.tryAttack('special', p2);
+  }
 }
 
 function updateAI(a, p, dt, mult){
@@ -515,7 +587,6 @@ function drawMatch(){
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(CANVAS_W, GROUND_Y); ctx.stroke();
 
-  // parking-lot perspective lines
   ctx.globalAlpha = 0.35;
   for (let x = 0; x <= CANVAS_W; x += 80){
     ctx.beginPath();
@@ -525,7 +596,6 @@ function drawMatch(){
   }
   ctx.globalAlpha = 1;
 
-  // draw the further fighter first
   if (p1.x <= p2.x){ drawFighter(p1); drawFighter(p2); }
   else { drawFighter(p2); drawFighter(p1); }
 }
@@ -543,13 +613,11 @@ function drawFighter(f){
   ctx.scale(f.facing, 1);
   ctx.globalAlpha = baseAlpha;
 
-  // ground shadow
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.beginPath();
   ctx.ellipse(0, 2, f.width * 0.34, 9, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // BACK limbs
   ctx.strokeStyle = boneCol;
   ctx.lineWidth = 7;
   ctx.lineCap = 'round';
@@ -560,7 +628,6 @@ function drawFighter(f){
   ctx.stroke();
   ctx.globalAlpha = baseAlpha;
 
-  // PHOTO BODY sits inside the rig
   if (art){
     const dh = f.height, dw = f.width;
     ctx.save();
@@ -579,7 +646,6 @@ function drawFighter(f){
     ctx.fillRect(-f.width / 2, -f.height, f.width, f.height);
   }
 
-  // FRONT limbs
   ctx.strokeStyle = boneCol;
   ctx.lineWidth = 8;
   ctx.beginPath();
@@ -587,14 +653,11 @@ function drawFighter(f){
   ctx.moveTo(0, r.shY); ctx.lineTo(r.elbowR.x, r.elbowR.y); ctx.lineTo(r.armR.x, r.armR.y);
   ctx.stroke();
 
-  // hand joint
   ctx.fillStyle = boneCol;
   ctx.beginPath(); ctx.arc(r.armR.x, r.armR.y, 6, 0, Math.PI * 2); ctx.fill();
 
-  // weapon spawns AT the animated hand, not a fixed coordinate
   if (f.state === 'special') drawWeapon(f, r.armR.x, r.armR.y, isShadow);
 
-  // shadow rage aura
   if (isShadow && f.specialGlow > 0){
     ctx.globalAlpha = 0.26;
     ctx.fillStyle = '#ff2222';
@@ -721,7 +784,6 @@ function endMatch(winner){
 function handleContinue(playerWon, opp){
   if (!playerWon){ goToTitle(); return; }
 
-  // already inside the shadow gauntlet
   if (gameState.inShadowGauntlet){
     const idx = SHADOW_ROSTER.findIndex(s => s.id === opp.id);
     if (idx === Progress.shadowUnlockCount - 1) Progress.unlockNextShadow();
@@ -737,7 +799,6 @@ function handleContinue(playerWon, opp){
     return;
   }
 
-  // tower cleared
   Progress.addClear();
   if (Progress.shadowUnlockCount === 0) Progress.unlockNextShadow();
   const firstShadow = SHADOW_ROSTER[Progress.shadowUnlockCount - 1];
@@ -758,7 +819,6 @@ function togglePause(){
   Nav.idx = 0;
   Nav.refresh();
 }
-
 document.getElementById('pauseIconBtn').onclick = togglePause;
 document.getElementById('resumeBtn').onclick = togglePause;
 document.getElementById('toTitleBtn').onclick = () => {
@@ -783,9 +843,7 @@ bindTouchButton('btnPunch','punch');
 bindTouchButton('btnKick','kick');
 bindTouchButton('btnSpecial','special');
 
-/* ==================== GLOBAL CONTROLLER NAVIGATION ====================
-Runs on EVERY screen, not just during a fight.
-====================================================================== */
+/* ==================== GLOBAL CONTROLLER NAVIGATION ==================== */
 const Nav = {
   items: [],
   idx: 0,
@@ -850,13 +908,13 @@ function inputLoop(ts){
     if (movedUp) Nav.move(-cols);
     if (Input.pressed('confirm') || Input.pressed('punch')) Nav.activate();
 
-    // roster focus doubles as a live stat preview
     if (screen === 'selectScreen' && (movedRight || movedLeft || movedDown || movedUp)){
       const el = Nav.items[Nav.idx];
       if (el && el.dataset && el.dataset.fid && el.dataset.fid !== selectedFighterId){
         selectFighter(el.dataset.fid, el);
       }
     }
+
     if (Input.pressed('pause') && screen === 'fightScreen') togglePause();
   }
   else {
