@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BOS: THROWDOWN</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loadingScreen" class="screen active">
+  <div class="loading-title">BOS: THROWDOWN</div>
+  <div class="loading-bar-track"><div id="loadingBarFill" class="loading-bar-fill"></div></div>
+  <div id="loadingPct" class="loading-pct">0%</div>
+  <div class="loading-sub">LOADING THE LOT...</div>
+</div>
+
+<div id="titleScreen" class="screen">
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+  <div class="title-logo">BOS<span class="title-sub">THROWDOWN</span></div>
+  <div class="title-prompt">TAP, CLICK, OR PRESS START</div>
+  <div id="metaProgress" class="meta-progress"></div>
+  <div id="tapGateOverlay" class="tap-gate-overlay">TAP OR PUNCH THE SCREEN TO FIGHT</div>
+</div>
+
+<div id="selectScreen" class="screen">
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+  <h2 class="section-title">SELECT YOUR FIGHTER</h2>
+  <div id="rosterGrid" class="roster-grid"></div>
+  <div id="statPanel" class="stat-panel hidden">
+    <div id="statName" class="stat-name"></div>
+    <div class="stat-row"><span>HP</span><div class="stat-bar"><div id="statHp" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>SPEED</span><div class="stat-bar"><div id="statSpeed" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>REACH</span><div class="stat-bar"><div id="statReach" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>LIGHT DMG</span><div class="stat-bar"><div id="statLight" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>HEAVY DMG</span><div class="stat-bar"><div id="statHeavy" class="stat-bar-fill"></div></div></div>
+    <div class="stat-row"><span>AGGRESSION</span><div class="stat-bar"><div id="statAi" class="stat-bar-fill"></div></div></div>
+    <button id="confirmBtn" class="confirm-btn">CONFIRM FIGHTER</button>
+  </div>
+</div>
+
+<div id="cutsceneScreen" class="screen">
+  <button id="skipBtn" class="skip-btn">SKIP</button>
+  <div id="cutsceneCard" class="cutscene-card"></div>
+  <div class="cutscene-bar-track"><div id="cutsceneBarFill" class="cutscene-bar-fill"></div></div>
+</div>
+
+<div id="vsScreen" class="screen">
+  <div class="scanlines"></div>
+  <div class="vs-portraits">
+    <div class="vs-side">
+      <img id="vsPlayerImg" class="vs-portrait" src="">
+      <div id="vsPlayerName" class="vs-name"></div>
+    </div>
+    <div class="vs-text">VS</div>
+    <div class="vs-side">
+      <img id="vsOpponentImg" class="vs-portrait" src="">
+      <div id="vsOpponentName" class="vs-name"></div>
+    </div>
+  </div>
+  <div id="vsRung" class="vs-rung"></div>
+  <div id="vsTaunt" class="vs-taunt"></div>
+</div>
+
+<div id="fightScreen" class="screen">
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
+
+  <div class="hud-top">
+    <div class="hud-hp-block">
+      <div id="hudP1Name" class="hud-name"></div>
+      <div class="hp-bar-track"><div id="hudP1Hp" class="hp-bar-fill p1"></div></div>
+      <div class="pips" id="hudP1Pips"></div>
+      <div class="meter-track"><div id="hudP1Meter" class="meter-fill"></div></div>
+    </div>
+    <div class="hud-center">
+      <div id="hudClock" class="hud-clock">90</div>
+    </div>
+    <div class="hud-hp-block right">
+      <div id="hudP2Name" class="hud-name"></div>
+      <div class="hp-bar-track"><div id="hudP2Hp" class="hp-bar-fill p2"></div></div>
+      <div class="pips" id="hudP2Pips"></div>
+      <div class="meter-track"><div id="hudP2Meter" class="meter-fill"></div></div>
+    </div>
+  </div>
+
+  <div id="roundCallout" class="round-callout"></div>
+  <div id="gamepadBadge" class="gamepad-badge">PS4 CONTROLLER CONNECTED</div>
+
+  <button id="pauseIconBtn" class="pause-icon-btn">II</button>
+  <button id="soundToggleBtn" class="sound-toggle-btn">SOUND: ON</button>
+
+  <div id="pauseMenu" class="pause-menu hidden">
+    <div class="pause-title">PAUSED</div>
+    <button id="resumeBtn" class="pause-btn">RESUME</button>
+    <button id="toTitleBtn" class="pause-btn">BACK TO TITLE</button>
+  </div>
+
+  <div class="touch-controls">
+    <div class="dpad">
+      <button id="btnLeft" class="dbtn dleft">◄</button>
+      <button id="btnRight" class="dbtn dright">►</button>
+      <button id="btnUp" class="dbtn dup">▲</button>
+      <button id="btnDown" class="dbtn ddown">▼</button>
+    </div>
+    <div class="abtns">
+      <button id="btnBlock" class="abtn block">BLK</button>
+      <button id="btnPunch" class="abtn punch">PUN</button>
+      <button id="btnKick" class="abtn kick">KIC</button>
+      <button id="btnSpecial" class="abtn special">SPC</button>
+    </div>
+  </div>
+</div>
+
+<div id="winScreen" class="screen">
+  <div class="scanlines"></div>
+  <img id="winPortrait" class="win-portrait" src="">
+  <div id="winTitle" class="win-title"></div>
+  <div id="winTaunt" class="win-taunt"></div>
+  <a id="footageLink" class="footage-link hidden" href="#" target="_blank">▶ WATCH THE FOOTAGE</a>
+  <button id="continueBtn" class="continue-btn">CONTINUE</button>
+</div>
+
+<script src="roster.js"></script>
+<script src="engine.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
